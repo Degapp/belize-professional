@@ -4,6 +4,138 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+function ClientHistorySection({ professionalId }) {
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!professionalId) return;
+
+    async function fetchClientHistory() {
+      try {
+        const response = await fetch(`/api/clients/history?professionalId=${professionalId}`);
+        if (!response.ok) throw new Error('Failed to fetch client history');
+        const data = await response.json();
+        setClients(data);
+      } catch (error) {
+        console.error('Error fetching client history:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchClientHistory();
+  }, [professionalId]);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getPaymentStatusInfo = (client) => {
+    const totalPaid = parseFloat(client.total_paid) || 0;
+    const totalBilled = parseFloat(client.total_billed) || 0;
+    const totalOutstanding = parseFloat(client.total_outstanding) || 0;
+
+    if (totalBilled === 0) {
+      return { label: 'No Invoices', color: 'slate', icon: 'minus-circle' };
+    }
+    if (totalOutstanding === 0) {
+      return { label: 'Fully Paid', color: 'emerald', icon: 'check-circle' };
+    }
+    if (totalPaid === 0) {
+      return { label: 'All Pending', color: 'amber', icon: 'clock' };
+    }
+    return { label: 'Partial', color: 'blue', icon: 'info' };
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-8 text-slate-500">
+        <i className="ph-light ph-spinner text-2xl animate-spin"></i>
+        <p className="mt-2 text-sm">Loading client history...</p>
+      </div>
+    );
+  }
+
+  if (clients.length === 0) {
+    return (
+      <div className="text-center py-12 bg-slate-50 rounded-xl">
+        <i className="ph-light ph-users text-4xl text-slate-300 mb-3"></i>
+        <p className="text-sm text-slate-500">No clients yet. Add your first client to get started.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 max-h-96 overflow-y-auto">
+      {clients.map((client) => {
+        const statusInfo = getPaymentStatusInfo(client);
+        const totalBilled = parseFloat(client.total_billed) || 0;
+        const totalPaid = parseFloat(client.total_paid) || 0;
+        const totalOutstanding = parseFloat(client.total_outstanding) || 0;
+        
+        return (
+          <div 
+            key={client.id} 
+            className="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200/60"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="font-semibold text-slate-900">{client.full_name}</div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold bg-${statusInfo.color}-100 text-${statusInfo.color}-700`}>
+                    {statusInfo.label}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-500 space-y-0.5">
+                  <div className="flex items-center gap-1">
+                    <i className="ph-light ph-envelope"></i>
+                    {client.email || 'No email'}
+                  </div>
+                  {client.phone && (
+                    <div className="flex items-center gap-1">
+                      <i className="ph-light ph-phone"></i>
+                      {client.phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-slate-900 text-lg">${totalBilled.toFixed(2)}</div>
+                <div className="text-xs text-slate-500">Total Billed</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-200/60">
+              <div>
+                <div className="text-xs text-slate-500 mb-1">Paid</div>
+                <div className="font-semibold text-emerald-600">${totalPaid.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 mb-1">Outstanding</div>
+                <div className="font-semibold text-amber-600">${totalOutstanding.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 mb-1">Invoices</div>
+                <div className="font-semibold text-slate-700">{client.total_invoices}</div>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center gap-1">
+                <i className="ph-light ph-clock"></i>
+                Last activity: {formatDate(client.last_interaction)}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -196,6 +328,20 @@ export default function DashboardPage() {
                     Browse all tutorials <i className="ph-light ph-arrow-right"></i>
                   </a>
                 </div>
+              </div>
+
+              {/* Client History Section */}
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="font-clash text-xl font-semibold text-slate-900 flex items-center gap-2">
+                      <i className="ph-light ph-users text-brand-600"></i> Client History
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">Chronological view of all clients with billing details</p>
+                  </div>
+                </div>
+
+                <ClientHistorySection professionalId={user?.id} />
               </div>
 
               {/* Invoices Section */}

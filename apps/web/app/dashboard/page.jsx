@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
 
 function ClientHistorySection({ professionalId }) {
   const [clients, setClients] = useState([]);
@@ -138,31 +139,11 @@ function ClientHistorySection({ professionalId }) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, signOut } = useAuth();
 
-  useEffect(() => {
-    // Check if user is logged in (simplified - in production use proper session management)
-    const userSession = localStorage.getItem('user_session');
-    if (!userSession) {
-      router.push('/#login');
-      return;
-    }
-    
-    try {
-      const userData = JSON.parse(userSession);
-      setUser(userData);
-    } catch (error) {
-      console.error('Error parsing user session:', error);
-      router.push('/#login');
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('user_session');
-    router.push('/');
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -211,12 +192,12 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-r from-brand-600 to-indigo-600 rounded-3xl p-8 lg:p-12 text-white">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                  <h1 className="font-clash text-3xl lg:text-4xl font-semibold mb-2">Welcome back, {user.full_name}!</h1>
+                  <h1 className="font-clash text-3xl lg:text-4xl font-semibold mb-2">Welcome back, {user.name || user.email}!</h1>
                   <p className="text-indigo-100">Here's your practice overview at a glance.</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm px-6 py-3 rounded-xl border border-white/20">
-                  <div className="text-xs text-indigo-200 uppercase tracking-wider mb-1">Professional Type</div>
-                  <div className="text-lg font-bold capitalize">{user.role || 'Professional'}</div>
+                  <div className="text-xs text-indigo-200 uppercase tracking-wider mb-1">Email</div>
+                  <div className="text-lg font-bold">{user.email}</div>
                 </div>
               </div>
             </div>

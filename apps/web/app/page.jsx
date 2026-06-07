@@ -197,15 +197,12 @@ export default function HomePage() {
       <nav className="hidden lg:flex items-center gap-8">
         <Link href="/" className="relative py-2 text-sm font-semibold text-brand-600 transition-colors after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-600 after:rounded-full">Home</Link>
         <Link href="/features" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Features</Link>
-        <Link href="/professionals" className="text-slate-700 hover:text-brand-600 transition-colors font-medium">
+        <Link href="/professionals" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
           Professionals
         </Link>
-        <Link href="/invoicing" className="text-slate-700 hover:text-brand-600 transition-colors font-medium">
-          Explore Interactive Invoicing
-        </Link>
-        <Link href="/accounting" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Accounting</Link>
-        <Link href="/support" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Support</Link>
+        <Link href="/pricing" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Pricing</Link>
         <Link href="/about" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">About Us</Link>
+        <Link href="/contact" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Contact</Link>
       </nav>
 
       <div className="flex items-center gap-4">
@@ -362,7 +359,221 @@ export default function HomePage() {
     </div>
   </section>
 
-  {/* Footer and remaining sections would go here - keeping it shorter for clarity */}
+  {/* Features Section */}
+  <section id="features" className="py-20 lg:py-32 bg-white relative">
+    <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="text-center mb-16">
+        <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-2 rounded-full text-xs font-semibold text-slate-700 mb-6">
+          <i className="ph-light ph-star text-indigo-500 text-base"></i>
+          <span>Everything you need in one platform</span>
+        </div>
+        <h2 className="font-clash text-4xl lg:text-5xl font-semibold text-slate-900 mb-4">
+          Built for Professional <span className="bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">Excellence</span>
+        </h2>
+        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          Comprehensive tools designed specifically for attorneys, doctors, and accountants in Belize.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {[
+          {
+            icon: 'calendar-check',
+            title: 'Smart Scheduling',
+            description: 'Google Calendar sync, WhatsApp reminders, and Zoom integration for seamless appointment management.'
+          },
+          {
+            icon: 'file-text',
+            title: 'Professional Invoicing',
+            description: 'Branded invoices with your logo, time tracking, and automatic 12.5% GST calculation.'
+          },
+          {
+            icon: 'users',
+            title: 'Client Database',
+            description: 'Secure KYC records, document storage, and complete client interaction history.'
+          },
+          {
+            icon: 'chart-line',
+            title: 'Financial Analytics',
+            description: 'Daily, weekly, monthly, and yearly revenue reports with GST breakdowns.'
+          },
+          {
+            icon: 'bell-ringing',
+            title: 'Automated Reminders',
+            description: 'WhatsApp and email automation for appointments, payments, and follow-ups.'
+          },
+          {
+            icon: 'credit-card',
+            title: 'Online Payments',
+            description: 'Secure payment links and real-time payment tracking integrated into invoices.'
+          }
+        ].map((feature, idx) => (
+          <div key={idx} className="bg-slate-50 rounded-2xl p-8 border border-slate-200 hover:shadow-xl hover:border-indigo-200 transition-all">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 mb-6">
+              <i className={`ph-light ph-${feature.icon} text-3xl`}></i>
+            </div>
+            <h3 className="font-clash text-xl font-semibold text-slate-900 mb-3">{feature.title}</h3>
+            <p className="text-slate-600 leading-relaxed">{feature.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* Testimonials Section */}
+  <section className="py-20 lg:py-32 bg-gradient-to-br from-indigo-50 via-white to-teal-50">
+    <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="text-center mb-16">
+        <h2 className="font-clash text-4xl lg:text-5xl font-semibold text-slate-900 mb-4">
+          Trusted by Belize's <span className="bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">Top Professionals</span>
+        </h2>
+        <p className="text-lg text-slate-600">See what our clients have to say</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[
+          {
+            name: 'Dr. Maria Santos',
+            role: 'Medical Practitioner',
+            image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop',
+            quote: 'Belize Professional has transformed how I manage my practice. The WhatsApp reminders alone have reduced no-shows by 80%.'
+          },
+          {
+            name: 'Attorney James Mitchell',
+            role: 'Corporate Law',
+            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+            quote: 'The invoicing and time tracking features are exactly what my firm needed. GST reporting is now effortless.'
+          },
+          {
+            name: 'Sarah Chen, CPA',
+            role: 'Certified Accountant',
+            image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop',
+            quote: "I love the financial analytics dashboard. It gives me instant visibility into my practice's performance."
+          }
+        ].map((testimonial, idx) => (
+          <div key={idx} className="bg-white rounded-2xl p-8 border border-slate-200 shadow-lg">
+            <div className="flex items-center gap-1 mb-4">
+              {[...Array(5)].map((_, i) => (
+                <i key={i} className="ph-fill ph-star text-amber-400 text-lg"></i>
+              ))}
+            </div>
+            <p className="text-slate-700 mb-6 leading-relaxed italic">&ldquo;{testimonial.quote}&rdquo;</p>
+            <div className="flex items-center gap-3">
+              <img src={testimonial.image} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover" />
+              <div>
+                <p className="font-semibold text-slate-900">{testimonial.name}</p>
+                <p className="text-sm text-slate-600">{testimonial.role}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* CTA Section */}
+  <section className="py-20 lg:py-32 bg-gradient-to-br from-brand-600 to-indigo-700 text-white relative overflow-hidden">
+    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -z-0"></div>
+    <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -z-0"></div>
+    
+    <div className="max-w-5xl mx-auto px-6 lg:px-8 text-center relative z-10">
+      <h2 className="font-clash text-4xl lg:text-5xl font-semibold mb-6">
+        Ready to Transform Your Practice?
+      </h2>
+      <p className="text-xl text-brand-50 mb-10 max-w-3xl mx-auto">
+        Join hundreds of Belize professionals who trust our platform to run their practices more efficiently.
+      </p>
+      
+      <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+        <Link href="/signup" className="px-10 py-5 bg-white text-brand-600 hover:bg-slate-50 font-semibold rounded-xl text-lg transition-all shadow-2xl active:scale-[0.98] flex items-center justify-center gap-2">
+          Start Your Free Trial <i className="ph-light ph-arrow-right"></i>
+        </Link>
+        <Link href="/contact" className="px-10 py-5 bg-white/10 border-2 border-white/30 text-white hover:bg-white/20 font-semibold rounded-xl text-lg transition-all flex items-center justify-center gap-2">
+          <i className="ph-light ph-chat-circle-dots"></i> Talk to Sales
+        </Link>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-8 text-brand-50">
+        <div className="flex items-center gap-2">
+          <i className="ph-light ph-check-circle text-2xl"></i>
+          <span>14-day free trial</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <i className="ph-light ph-check-circle text-2xl"></i>
+          <span>No credit card required</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <i className="ph-light ph-check-circle text-2xl"></i>
+          <span>Cancel anytime</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Footer */}
+  <footer className="bg-slate-900 text-slate-300 py-16">
+    <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="md:col-span-1">
+          <Link href="/" className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+              <i className="ph-light ph-squares-four text-2xl font-bold"></i>
+            </div>
+            <span className="font-clash font-semibold text-xl text-white">Belize Professional</span>
+          </Link>
+          <p className="text-slate-400 mb-6 leading-relaxed">
+            The premier platform for Belize's elite professionals—attorneys, doctors, and accountants.
+          </p>
+          <div className="flex items-center gap-2 text-slate-400">
+            <i className="ph-light ph-map-pin"></i>
+            <span className="text-sm">Cayo, Belize</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-white mb-4">Product</h4>
+          <ul className="space-y-3 text-sm">
+            <li><Link href="/features" className="hover:text-white transition-colors">Features</Link></li>
+            <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+            <li><Link href="/professionals" className="hover:text-white transition-colors">Professionals</Link></li>
+            <li><Link href="/signup" className="hover:text-white transition-colors">Sign Up</Link></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-white mb-4">Company</h4>
+          <ul className="space-y-3 text-sm">
+            <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
+            <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-white mb-4">Get in Touch</h4>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center gap-2">
+              <i className="ph-light ph-phone"></i>
+              <a href="tel:5016352720" className="hover:text-white transition-colors">501-6352720</a>
+            </li>
+            <li>
+              <p className="text-slate-400">Monday - Friday</p>
+              <p className="text-white">8:00 AM - 6:00 PM CST</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <p className="text-sm text-slate-400">
+          &copy; 2024 Belize Professional. All rights reserved.
+        </p>
+        <div className="flex items-center gap-6 text-sm text-slate-400">
+          <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+          <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
 </div>
       </>
     );

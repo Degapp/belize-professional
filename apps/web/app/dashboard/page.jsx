@@ -166,6 +166,7 @@ export default function DashboardPage() {
 
             <nav className="hidden lg:flex items-center gap-8">
               <a href="#" onClick={() => router.push('/dashboard')} className="relative py-2 text-sm font-semibold text-brand-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-600 after:rounded-full cursor-pointer">Dashboard</a>
+              <a href="#" onClick={() => router.push('/analytics')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Analytics</a>
               <a href="#" onClick={() => router.push('/features')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Features</a>
               <Link href="/professionals" className="text-slate-700 hover:text-brand-600 transition-colors font-medium">
                 Professionals
@@ -406,19 +407,33 @@ export default function DashboardPage() {
               <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm">
                 <h3 className="font-semibold text-slate-900 mb-4">Quick Actions</h3>
                 <div className="space-y-3">
-                  <button className="w-full px-4 py-3 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
+                  <button 
+                    onClick={() => router.push('/calendar')}
+                    className="w-full px-4 py-3 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
                     <i className="ph-light ph-calendar-plus text-lg"></i>
                     New Appointment
                   </button>
-                  <button className="w-full px-4 py-3 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
+                  <button 
+                    onClick={() => router.push('/clients/new')}
+                    className="w-full px-4 py-3 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
                     <i className="ph-light ph-user-plus text-lg"></i>
                     Add Client
                   </button>
-                  <button className="w-full px-4 py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
+                  <button 
+                    onClick={() => router.push('/invoice-builder')}
+                    className="w-full px-4 py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
                     <i className="ph-light ph-file-plus text-lg"></i>
                     Create Invoice
                   </button>
-                  <button className="w-full px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
+                  <button 
+                    onClick={() => router.push('/analytics')}
+                    className="w-full px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
+                    <i className="ph-light ph-chart-bar text-lg"></i>
+                    View Analytics
+                  </button>
+                  <button 
+                    onClick={() => router.push('/settings/integrations')}
+                    className="w-full px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
                     <i className="ph-light ph-gear text-lg"></i>
                     Settings
                   </button>

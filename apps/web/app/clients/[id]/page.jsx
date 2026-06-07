@@ -1,0 +1,437 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+
+export default function ClientDetailPage({ params }) {
+  const router = useRouter();
+  const { user, signOut } = useAuth();
+  const [clientData, setClientData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    const fetchClientData = async () => {
+      const resolvedParams = await params;
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/clients/${resolvedParams.id}`);
+        if (!response.ok) throw new Error('Failed to fetch client');
+        const data = await response.json();
+        setClientData(data);
+      } catch (error) {
+        console.error('Error fetching client:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClientData();
+  }, [params]);
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
+  const getKYCBadgeColor = (status) => {
+    switch (status) {
+      case 'verified': return 'bg-emerald-100 text-emerald-700';
+      case 'pending': return 'bg-amber-100 text-amber-700';
+      case 'incomplete': return 'bg-slate-100 text-slate-700';
+      default: return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'paid': return 'bg-emerald-100 text-emerald-700';
+      case 'pending': return 'bg-amber-100 text-amber-700';
+      case 'overdue': return 'bg-red-100 text-red-700';
+      case 'confirmed': return 'bg-blue-100 text-blue-700';
+      case 'cancelled': return 'bg-slate-100 text-slate-700';
+      case 'open': return 'bg-blue-100 text-blue-700';
+      case 'closed': return 'bg-slate-100 text-slate-700';
+      default: return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+        <div className="text-center">
+          <i className="ph-light ph-spinner text-4xl text-brand-600 animate-spin"></i>
+          <p className="mt-4 text-slate-600">Loading client details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!clientData) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+        <p className="text-slate-600">Client not found</p>
+      </div>
+    );
+  }
+
+  const { client, appointments, invoices, cases } = clientData;
+  const customFields = typeof client.custom_fields === 'string' 
+    ? JSON.parse(client.custom_fields) 
+    : client.custom_fields || {};
+
+  return (
+    <div className="font-satoshi bg-slate-50/50 text-slate-900 antialiased min-h-screen">
+      {/* Header */}
+      <header className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-xl border-b border-slate-100/80">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
+          <a href="#" onClick={() => router.push('/')} className="flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+              <i className="ph-light ph-squares-four text-2xl font-bold"></i>
+            </div>
+            <span className="font-clash font-semibold text-2xl tracking-tight text-slate-900">Belize Professional<span className="text-brand-600">.</span></span>
+          </a>
+
+          <div className="flex items-center gap-4">
+            <button onClick={handleLogout} className="px-5 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold text-sm rounded-xl transition-all">
+              Log Out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          {/* Breadcrumb */}
+          <div className="mb-6">
+            <button 
+              onClick={() => router.push('/clients')}
+              className="text-brand-600 hover:text-brand-700 font-medium text-sm flex items-center gap-2"
+            >
+              <i className="ph-light ph-arrow-left"></i>
+              Back to Clients
+            </button>
+          </div>
+
+          {/* Client Header */}
+          <div className="bg-gradient-to-r from-brand-600 to-indigo-600 rounded-2xl p-8 mb-8 text-white">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-bold">
+                  {client.full_name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <div>
+                  <h1 className="font-clash text-3xl font-semibold mb-2">{client.full_name}</h1>
+                  <div className="flex items-center gap-4 text-indigo-100">
+                    {client.email && (
+                      <div className="flex items-center gap-2">
+                        <i className="ph-light ph-envelope"></i>
+                        {client.email}
+                      </div>
+                    )}
+                    {client.phone && (
+                      <div className="flex items-center gap-2">
+                        <i className="ph-light ph-phone"></i>
+                        {client.phone}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <span className={`px-4 py-2 rounded-xl text-sm font-semibold ${
+                client.kyc_status === 'verified' ? 'bg-emerald-500/20 text-emerald-100' :
+                client.kyc_status === 'pending' ? 'bg-amber-500/20 text-amber-100' :
+                'bg-slate-500/20 text-slate-100'
+              }`}>
+                KYC: {client.kyc_status?.charAt(0).toUpperCase() + client.kyc_status?.slice(1)}
+              </span>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm mb-8">
+            <div className="flex border-b border-slate-200 overflow-x-auto">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === 'overview'
+                    ? 'text-brand-600 border-brand-600'
+                    : 'text-slate-600 border-transparent hover:text-slate-900'
+                }`}
+              >
+                <i className="ph-light ph-info mr-2"></i>
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('appointments')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === 'appointments'
+                    ? 'text-brand-600 border-brand-600'
+                    : 'text-slate-600 border-transparent hover:text-slate-900'
+                }`}
+              >
+                <i className="ph-light ph-calendar mr-2"></i>
+                Appointments ({appointments?.length || 0})
+              </button>
+              <button
+                onClick={() => setActiveTab('invoices')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === 'invoices'
+                    ? 'text-brand-600 border-brand-600'
+                    : 'text-slate-600 border-transparent hover:text-slate-900'
+                }`}
+              >
+                <i className="ph-light ph-receipt mr-2"></i>
+                Invoices ({invoices?.length || 0})
+              </button>
+              <button
+                onClick={() => setActiveTab('cases')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === 'cases'
+                    ? 'text-brand-600 border-brand-600'
+                    : 'text-slate-600 border-transparent hover:text-slate-900'
+                }`}
+              >
+                <i className="ph-light ph-folder mr-2"></i>
+                Cases ({cases?.length || 0})
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'overview' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Contact Information */}
+              <div className="lg:col-span-2 space-y-8">
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                  <h2 className="font-semibold text-xl text-slate-900 mb-6 flex items-center gap-2">
+                    <i className="ph-light ph-user text-brand-600"></i>
+                    Contact Information
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-slate-500 mb-1">Full Name</p>
+                      <p className="font-semibold text-slate-900">{client.full_name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 mb-1">Date of Birth</p>
+                      <p className="font-semibold text-slate-900">{formatDate(client.date_of_birth)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 mb-1">Email</p>
+                      <p className="font-semibold text-slate-900">{client.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 mb-1">Phone</p>
+                      <p className="font-semibold text-slate-900">{client.phone || 'N/A'}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-slate-500 mb-1">Address</p>
+                      <p className="font-semibold text-slate-900">
+                        {[client.address, client.city, client.country].filter(Boolean).join(', ') || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Case Notes */}
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                  <h2 className="font-semibold text-xl text-slate-900 mb-4 flex items-center gap-2">
+                    <i className="ph-light ph-note text-brand-600"></i>
+                    Case Notes
+                  </h2>
+                  <p className="text-slate-600 whitespace-pre-wrap">
+                    {client.notes || 'No notes added yet.'}
+                  </p>
+                </div>
+
+                {/* Custom Fields */}
+                {Object.keys(customFields).length > 0 && (
+                  <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                    <h2 className="font-semibold text-xl text-slate-900 mb-6 flex items-center gap-2">
+                      <i className="ph-light ph-plus-circle text-brand-600"></i>
+                      Custom Fields
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Object.entries(customFields).map(([key, value]) => (
+                        <div key={key}>
+                          <p className="text-sm text-slate-500 mb-1">{key}</p>
+                          <p className="font-semibold text-slate-900">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4">Quick Stats</h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Total Appointments</span>
+                      <span className="font-bold text-slate-900">{appointments?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Total Invoices</span>
+                      <span className="font-bold text-slate-900">{invoices?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Active Cases</span>
+                      <span className="font-bold text-slate-900">
+                        {cases?.filter(c => c.status === 'open').length || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Client Since</span>
+                      <span className="font-bold text-slate-900">{formatDate(client.created_at)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-brand-50 to-indigo-50 rounded-2xl border border-brand-100 p-6">
+                  <h3 className="font-semibold text-slate-900 mb-3">Quick Actions</h3>
+                  <div className="space-y-2">
+                    <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200">
+                      <i className="ph-light ph-calendar-plus"></i>
+                      Schedule Appointment
+                    </button>
+                    <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200">
+                      <i className="ph-light ph-receipt"></i>
+                      Create Invoice
+                    </button>
+                    <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200">
+                      <i className="ph-light ph-pencil"></i>
+                      Edit Client
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'appointments' && (
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+              <h2 className="font-semibold text-xl text-slate-900 mb-6">Appointment History</h2>
+              {appointments && appointments.length > 0 ? (
+                <div className="space-y-4">
+                  {appointments.map((apt) => (
+                    <div key={apt.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold text-slate-900">{apt.title}</h3>
+                          <p className="text-sm text-slate-600 mt-1">{apt.description}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(apt.status)}`}>
+                          {apt.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-slate-500 mt-3">
+                        <span className="flex items-center gap-1">
+                          <i className="ph-light ph-calendar"></i>
+                          {formatDateTime(apt.start_at)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <i className="ph-light ph-map-pin"></i>
+                          {apt.location_type}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-12 text-slate-500">No appointments yet</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'invoices' && (
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+              <h2 className="font-semibold text-xl text-slate-900 mb-6">Invoice History</h2>
+              {invoices && invoices.length > 0 ? (
+                <div className="space-y-4">
+                  {invoices.map((inv) => (
+                    <div key={inv.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-slate-900">{inv.invoice_number}</h3>
+                          <p className="text-sm text-slate-600">
+                            Issue: {formatDate(inv.issue_date)} • Due: {formatDate(inv.due_date)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-slate-900 text-lg">BZD {parseFloat(inv.total_amount).toFixed(2)}</p>
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1 ${getStatusColor(inv.status)}`}>
+                            {inv.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-12 text-slate-500">No invoices yet</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'cases' && (
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+              <h2 className="font-semibold text-xl text-slate-900 mb-6">Case History</h2>
+              {cases && cases.length > 0 ? (
+                <div className="space-y-4">
+                  {cases.map((caseItem) => (
+                    <div key={caseItem.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-slate-900">{caseItem.subject}</h3>
+                            <span className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-xs font-semibold">
+                              {caseItem.case_type}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600">{caseItem.details}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(caseItem.status)}`}>
+                          {caseItem.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-slate-500 mt-3">
+                        <span>Opened: {formatDate(caseItem.opened_at)}</span>
+                        {caseItem.closed_at && <span>Closed: {formatDate(caseItem.closed_at)}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-12 text-slate-500">No cases yet</p>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}

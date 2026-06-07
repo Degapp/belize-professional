@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function CalendarPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [view, setView] = useState('month'); // 'day', 'week', 'month'
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -349,21 +351,22 @@ export default function CalendarPage() {
                   >
                     <div className="space-y-2">
                       {dayAppointments.map(apt => (
-                        <div
-                          key={apt.id}
-                          className="p-3 bg-white border border-brand-200 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer"
-                        >
-                          <div className="flex items-start gap-2 mb-2">
-                            <i className={`${getLocationIcon(apt.location_type)} text-brand-600 mt-0.5`}></i>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-slate-900 truncate">{apt.title}</div>
-                              <div className="text-xs text-slate-600">{apt.client_name}</div>
-                            </div>
-                          </div>
-                          <div className="text-xs font-semibold text-brand-600">
-                            {formatTime(apt.start_at)} - {formatTime(apt.end_at)}
+                      <div
+                        key={apt.id}
+                        onClick={() => router.push(`/appointments/${apt.id}`)}
+                        className="p-3 bg-white border border-brand-200 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start gap-2 mb-2">
+                          <i className={`${getLocationIcon(apt.location_type)} text-brand-600 mt-0.5`}></i>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-slate-900 truncate">{apt.title}</div>
+                            <div className="text-xs text-slate-600">{apt.client_name}</div>
                           </div>
                         </div>
+                        <div className="text-xs font-semibold text-brand-600">
+                          {formatTime(apt.start_at)} - {formatTime(apt.end_at)}
+                        </div>
+                      </div>
                       ))}
                     </div>
                   </div>
@@ -396,6 +399,7 @@ export default function CalendarPage() {
                   {appointments.map(apt => (
                     <div
                       key={apt.id}
+                      onClick={() => router.push(`/appointments/${apt.id}`)}
                       className="p-4 border border-slate-200 rounded-lg hover:border-brand-300 hover:shadow-md transition-all cursor-pointer"
                     >
                       <div className="flex items-start gap-4">

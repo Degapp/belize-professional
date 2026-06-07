@@ -4,32 +4,13 @@ import { NextResponse } from "next/server";
 export async function POST(request) {
   try {
     const data = await request.json();
-    const {
-      invoice_id,
-      amount,
-      payment_method,
-      card_number,
-      card_holder,
-      cvv,
-      expiry_date
-    } = data;
+    const { invoice_id, amount, payment_method, provider_reference } = data;
 
-    if (!invoice_id || !amount || !payment_method) {
+    if (!invoice_id || !amount) {
       return NextResponse.json({ 
-        error: 'invoice_id, amount, and payment_method are required' 
+        error: 'invoice_id and amount are required' 
       }, { status: 400 });
     }
-
-    // Normalize payment method to match database constraint
-    const validMethods = {
-      'credit_card': 'card',
-      'debit_card': 'card',
-      'card': 'card',
-      'bank_transfer': 'bank_transfer',
-      'online_banking': 'online_banking',
-      'cash': 'cash'
-    };
-    const normalizedMethod = validMethods[payment_method.toLowerCase()] || 'card';
 
     // Get invoice
     const [invoice] = await sql`
@@ -40,32 +21,34 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    // In production, integrate with Stripe/PayPal/etc.
-    // For now, simulate payment processing
-    const paymentReference = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-
     // Create payment record
     const [payment] = await sql`
       INSERT INTO payments (
-        invoice_id, amount, currency, payment_method, provider,
-        provider_reference, status, paid_at
+        invoice_id, amount, currency, payment_method, 
+        provider, provider_reference, status, paid_at
       ) VALUES (
-        ${invoice_id}, ${amount}, ${invoice.currency}, ${normalizedMethod},
-        'stripe', ${paymentReference}, 'succeeded', CURRENT_TIMESTAMP
+        ${invoice_id}, ${amount}, ${invoice.currency || 'BZD'},
+        ${payment_method || 'bank_transfer'}, 
+        ${payment_method || 'manual'}, ${provider_reference || null},
+        'completed', CURRENT_TIMESTAMP
       ) RETURNING *
     `;
 
     // Update invoice status
-    await sql`
+    const [updatedInvoice] = await sql`
       UPDATE invoices 
-      SET status = 'paid', paid_at = CURRENT_TIMESTAMP
+      SET 
+        status = 'paid',
+        payment_status = 'paid',
+        paid_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
       WHERE id = ${invoice_id}
+      RETURNING *
     `;
 
     return NextResponse.json({ 
-      success: true,
-      payment,
-      message: 'Payment processed successfully'
+      payment, 
+      invoice: updatedInvoice 
     });
   } catch (error) {
     console.error('Error processing payment:', error);

@@ -43,8 +43,9 @@ export async function POST(request) {
       WHERE id = ${user.id}
     `;
 
-    // Create reset URL
-    const resetUrl = `${process.env.BETTER_AUTH_URL || 'https://isu1ju6pgod4ktl6f3wf8.web-preview.appgen.com'}/reset-password?token=${resetToken}`;
+    // Create reset URL - use absolute URL in production
+    const baseUrl = process.env.BETTER_AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     // TODO: Send email with reset link
     // For now, log it to console (in production, integrate with email service)

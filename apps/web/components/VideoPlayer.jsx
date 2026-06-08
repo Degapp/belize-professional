@@ -7,7 +7,7 @@ export default function VideoPlayer({
   poster, 
   title = "Video",
   description,
-  autoplay = false,
+  autoPlay = false,
   controls = true,
   className = ""
 }) {
@@ -19,11 +19,11 @@ export default function VideoPlayer({
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (autoplay && videoRef.current && isLoaded) {
+    if (autoPlay && videoRef.current && isLoaded) {
       videoRef.current.play();
       setIsPlaying(true);
     }
-  }, [autoplay, isLoaded]);
+  }, [autoPlay, isLoaded]);
 
   const handlePlayPause = () => {
     if (videoRef.current) {

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import VideoPlayer from '@/components/VideoPlayer';
 
 function ClientHistorySection({ professionalId }) {
   const [clients, setClients] = useState([]);
@@ -140,6 +141,7 @@ function ClientHistorySection({ professionalId }) {
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
+  const [showVideo, setShowVideo] = useState(null);
 
   const handleLogout = async () => {
     await signOut();
@@ -260,7 +262,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-50 rounded-xl overflow-hidden group cursor-pointer hover:shadow-md transition-all">
+                  <div onClick={() => setShowVideo('getting-started')} className="bg-slate-50 rounded-xl overflow-hidden group cursor-pointer hover:shadow-md transition-all">
                     <div className="h-32 bg-slate-200 flex items-center justify-center relative">
                       <i className="ph-light ph-play-circle text-4xl text-slate-400 group-hover:text-brand-600 transition-colors"></i>
                       <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">4:32</div>
@@ -271,7 +273,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 rounded-xl overflow-hidden group cursor-pointer hover:shadow-md transition-all">
+                  <div onClick={() => setShowVideo('appointments')} className="bg-slate-50 rounded-xl overflow-hidden group cursor-pointer hover:shadow-md transition-all">
                     <div className="h-32 bg-slate-200 flex items-center justify-center relative">
                       <i className="ph-light ph-play-circle text-4xl text-slate-400 group-hover:text-brand-600 transition-colors"></i>
                       <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">7:15</div>
@@ -282,7 +284,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 rounded-xl overflow-hidden group cursor-pointer hover:shadow-md transition-all">
+                  <div onClick={() => setShowVideo('invoices')} className="bg-slate-50 rounded-xl overflow-hidden group cursor-pointer hover:shadow-md transition-all">
                     <div className="h-32 bg-slate-200 flex items-center justify-center relative">
                       <i className="ph-light ph-play-circle text-4xl text-slate-400 group-hover:text-brand-600 transition-colors"></i>
                       <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">5:48</div>
@@ -293,7 +295,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 rounded-xl overflow-hidden group cursor-pointer hover:shadow-md transition-all">
+                  <div onClick={() => setShowVideo('whatsapp')} className="bg-slate-50 rounded-xl overflow-hidden group cursor-pointer hover:shadow-md transition-all">
                     <div className="h-32 bg-slate-200 flex items-center justify-center relative">
                       <i className="ph-light ph-play-circle text-4xl text-slate-400 group-hover:text-brand-600 transition-colors"></i>
                       <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">6:22</div>
@@ -480,6 +482,49 @@ export default function DashboardPage() {
         </section>
 
       </div>
+
+      {/* Video Modal */}
+      {showVideo && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowVideo(null)}>
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-clash text-xl font-semibold text-slate-900">
+                {showVideo === 'getting-started' && 'Getting Started Guide'}
+                {showVideo === 'appointments' && 'Managing Appointments'}
+                {showVideo === 'invoices' && 'Creating Invoices'}
+                {showVideo === 'whatsapp' && 'WhatsApp Integration'}
+              </h3>
+              <button onClick={() => setShowVideo(null)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <i className="ph-light ph-x text-lg"></i>
+              </button>
+            </div>
+            
+            <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden mb-4">
+              <VideoPlayer
+                src={`/videos/${showVideo}.mp4`}
+                autoPlay={true}
+              />
+            </div>
+
+            <p className="text-sm text-slate-500">
+              {showVideo === 'getting-started' && 'Learn the basics of navigating your professional dashboard and setting up your practice.'}
+              {showVideo === 'appointments' && 'Discover how to schedule appointments, sync with Google Calendar, and automate reminders.'}
+              {showVideo === 'invoices' && 'Master the invoice builder with branded templates, time tracking integration, and instant sending.'}
+              {showVideo === 'whatsapp' && 'Connect WhatsApp to send automated appointment reminders and payment notifications to your clients.'}
+            </p>
+            
+            <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="flex gap-3">
+                <i className="ph-light ph-info text-blue-600 text-xl flex-shrink-0"></i>
+                <div className="text-sm text-blue-900">
+                  <strong className="font-semibold">Tutorial videos coming soon!</strong>
+                  <p className="text-blue-700 mt-1">To add your own tutorial videos, place them in <code className="bg-blue-100 px-1.5 py-0.5 rounded text-xs">/public/videos/</code> with filenames matching the tutorial IDs (e.g., <code className="bg-blue-100 px-1.5 py-0.5 rounded text-xs">invoices.mp4</code>).</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

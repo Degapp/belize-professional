@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import VideoPlayer from '@/components/VideoPlayer';
 
 export default function HomePage() {
     const { isAuthenticated } = useAuth();
@@ -87,15 +88,13 @@ export default function HomePage() {
                   <p className="text-base text-slate-500 max-w-2xl mx-auto">Explore how Belize Professional streamlines your practice with intelligent scheduling, invoicing, and client management.</p>
                 </div>
 
-                <div className="mb-8 rounded-xl overflow-hidden bg-slate-100 aspect-video flex items-center justify-center border border-slate-200">
-                  <div className="text-center space-y-3">
-                    <div className="w-20 h-20 rounded-full bg-brand-600 flex items-center justify-center text-white mx-auto shadow-lg hover:bg-brand-700 transition-all cursor-pointer">
-                      <i className="ph-light ph-play-circle text-5xl"></i>
-                    </div>
-                    <p className="text-slate-600 font-medium">Watch Platform Demo Video</p>
-                    <p className="text-sm text-slate-500">See how professionals manage clients, appointments & invoices</p>
-                  </div>
-                </div>
+                <VideoPlayer 
+                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                  poster="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200&h=675&fit=crop&q=80"
+                  title="Platform Demo"
+                  description="See how professionals manage clients, appointments & invoices"
+                  className="mb-8"
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   <div className="p-6 bg-gradient-to-br from-indigo-50 to-white rounded-xl border border-indigo-100">

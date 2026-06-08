@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import VideoPlayer from '@/components/VideoPlayer';
 
 export default function AboutPage() {
   const team = [
@@ -91,6 +92,22 @@ export default function AboutPage() {
           <p className="text-xl text-slate-600 max-w-3xl mx-auto">
             We're on a mission to provide Belize's attorneys, doctors, and accountants with world-class tools to deliver exceptional service to their clients.
           </p>
+        </div>
+      </section>
+
+      {/* Video Section */}
+      <section className="py-12 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="font-clash text-3xl font-semibold text-slate-900 mb-3">See Our Platform in Action</h2>
+            <p className="text-slate-600">Discover how we're transforming professional practice management in Belize</p>
+          </div>
+          <VideoPlayer 
+            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            poster="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1200&h=675&fit=crop&q=80"
+            title="Our Story"
+            description="Learn about our mission to empower Belize's professionals"
+          />
         </div>
       </section>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import VideoPlayer from '@/components/VideoPlayer';
 
 export default function FeaturesPage() {
   const features = [
@@ -96,6 +97,18 @@ export default function FeaturesPage() {
           <p className="text-xl text-slate-600 max-w-3xl mx-auto mb-10">
             From intelligent scheduling to automated invoicing and comprehensive analytics—everything you need to deliver world-class service to your clients.
           </p>
+        </div>
+      </section>
+
+      {/* Video Demo Section */}
+      <section className="py-12 bg-white">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          <VideoPlayer 
+            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            poster="https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&h=675&fit=crop&q=80"
+            title="Features in Action"
+            description="Watch how Belize Professional streamlines your daily workflow"
+          />
         </div>
       </section>
 

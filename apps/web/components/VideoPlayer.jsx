@@ -9,7 +9,8 @@ export default function VideoPlayer({
   description,
   autoPlay = false,
   controls = true,
-  className = ""
+  className = "",
+  compact = false
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -80,6 +81,47 @@ export default function VideoPlayer({
     return 'video/mp4'; // default
   };
 
+  // Compact mode for small card thumbnails
+  if (compact) {
+    return (
+      <div className={`relative w-full h-full bg-black ${className}`}>
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={() => setIsPlaying(false)}
+          onError={handleError}
+          poster={poster}
+          playsInline
+          muted
+        >
+          {src && <source src={src} type={getVideoType(src)} />}
+        </video>
+
+        {/* Play Overlay for compact mode */}
+        {!isPlaying && !error && (
+          <button
+            onClick={handlePlayPause}
+            className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors group"
+          >
+            <div className="w-12 h-12 bg-brand-600/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <i className="ph-light ph-play text-white text-2xl ml-0.5"></i>
+            </div>
+          </button>
+        )}
+
+        {/* Error state for compact mode */}
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
+            <i className="ph-light ph-video-camera-slash text-3xl text-slate-500"></i>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full mode with controls
   if (error) {
     return (
       <div className={`bg-slate-100 rounded-2xl overflow-hidden ${className}`}>

@@ -13,16 +13,38 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('month'); // day, week, month, year
   const [exporting, setExporting] = useState(false);
+  const [professionalId, setProfessionalId] = useState(null);
 
+  // Fetch professional ID from user
   useEffect(() => {
     if (!user) return;
+    
+    const fetchProfessionalId = async () => {
+      try {
+        // Fetch the professional record for this user
+        const res = await fetch(`/api/professionals?user_id=${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.professionals && data.professionals.length > 0) {
+            setProfessionalId(data.professionals[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching professional ID:', error);
+      }
+    };
+    
+    fetchProfessionalId();
+  }, [user]);
+
+  useEffect(() => {
+    if (!professionalId) return;
     fetchAnalytics();
-  }, [user, timeframe]);
+  }, [professionalId, timeframe]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const professionalId = user?.id || 1;
       
       // Calculate date range based on timeframe
       const endDate = new Date();
@@ -73,7 +95,6 @@ export default function AnalyticsPage() {
   const exportMonthlyReport = async () => {
     try {
       setExporting(true);
-      const professionalId = user?.id || 1;
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
       const monthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       

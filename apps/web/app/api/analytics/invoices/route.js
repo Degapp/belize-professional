@@ -12,52 +12,161 @@ export async function GET(request) {
       return NextResponse.json({ error: 'professional_id is required' }, { status: 400 });
     }
 
-    // Build date filter
-    let dateFilter = sql``;
+    // Total revenue
+    let revenueData;
     if (startDate && endDate) {
-      dateFilter = sql`AND i.issue_date BETWEEN ${startDate} AND ${endDate}`;
+      [revenueData] = await sql`
+        SELECT 
+          COALESCE(SUM(total_amount), 0) as total_revenue,
+          COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) as paid_revenue,
+          COALESCE(SUM(CASE WHEN status = 'sent' OR status = 'overdue' THEN total_amount ELSE 0 END), 0) as outstanding_revenue
+        FROM invoices i
+        WHERE i.professional_id = ${professionalId}
+        AND i.issue_date BETWEEN ${startDate} AND ${endDate}
+      `;
     } else if (startDate) {
-      dateFilter = sql`AND i.issue_date >= ${startDate}`;
+      [revenueData] = await sql`
+        SELECT 
+          COALESCE(SUM(total_amount), 0) as total_revenue,
+          COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) as paid_revenue,
+          COALESCE(SUM(CASE WHEN status = 'sent' OR status = 'overdue' THEN total_amount ELSE 0 END), 0) as outstanding_revenue
+        FROM invoices i
+        WHERE i.professional_id = ${professionalId}
+        AND i.issue_date >= ${startDate}
+      `;
     } else if (endDate) {
-      dateFilter = sql`AND i.issue_date <= ${endDate}`;
+      [revenueData] = await sql`
+        SELECT 
+          COALESCE(SUM(total_amount), 0) as total_revenue,
+          COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) as paid_revenue,
+          COALESCE(SUM(CASE WHEN status = 'sent' OR status = 'overdue' THEN total_amount ELSE 0 END), 0) as outstanding_revenue
+        FROM invoices i
+        WHERE i.professional_id = ${professionalId}
+      `;
+    } else {
+      [revenueData] = await sql`
+        SELECT 
+          COALESCE(SUM(total_amount), 0) as total_revenue,
+          COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) as paid_revenue,
+          COALESCE(SUM(CASE WHEN status = 'sent' OR status = 'overdue' THEN total_amount ELSE 0 END), 0) as outstanding_revenue
+        FROM invoices i
+        WHERE i.professional_id = ${professionalId}
+      `;
     }
 
-    // Total revenue
-    const [revenueData] = await sql`
-      SELECT 
-        COALESCE(SUM(total_amount), 0) as total_revenue,
-        COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) as paid_revenue,
-        COALESCE(SUM(CASE WHEN status = 'sent' OR status = 'overdue' THEN total_amount ELSE 0 END), 0) as outstanding_revenue
-      FROM invoices i
-      WHERE i.professional_id = ${professionalId} ${dateFilter}
-    `;
-
     // Invoice status breakdown
-    const statusBreakdown = await sql`
-      SELECT 
-        status,
-        COUNT(*) as count,
-        COALESCE(SUM(total_amount), 0) as total_amount
-      FROM invoices
-      WHERE professional_id = ${professionalId} ${dateFilter}
-      GROUP BY status
-      ORDER BY count DESC
-    `;
+    let statusBreakdown;
+    if (startDate && endDate) {
+      statusBreakdown = await sql`
+        SELECT 
+          status,
+          COUNT(*) as count,
+          COALESCE(SUM(total_amount), 0) as total_amount
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND issue_date BETWEEN ${startDate} AND ${endDate}
+        GROUP BY status
+        ORDER BY count DESC
+      `;
+    } else if (startDate) {
+      statusBreakdown = await sql`
+        SELECT 
+          status,
+          COUNT(*) as count,
+          COALESCE(SUM(total_amount), 0) as total_amount
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND issue_date >= ${startDate}
+        GROUP BY status
+        ORDER BY count DESC
+      `;
+    } else if (endDate) {
+      statusBreakdown = await sql`
+        SELECT 
+          status,
+          COUNT(*) as count,
+          COALESCE(SUM(total_amount), 0) as total_amount
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND issue_date <= ${endDate}
+        GROUP BY status
+        ORDER BY count DESC
+      `;
+    } else {
+      statusBreakdown = await sql`
+        SELECT 
+          status,
+          COUNT(*) as count,
+          COALESCE(SUM(total_amount), 0) as total_amount
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        GROUP BY status
+        ORDER BY count DESC
+      `;
+    }
 
     // Top clients by revenue
-    const topClients = await sql`
-      SELECT 
-        c.id,
-        c.full_name,
-        COUNT(i.id) as invoice_count,
-        COALESCE(SUM(i.total_amount), 0) as total_revenue
-      FROM clients c
-      JOIN invoices i ON c.id = i.client_id
-      WHERE i.professional_id = ${professionalId} ${dateFilter}
-      GROUP BY c.id, c.full_name
-      ORDER BY total_revenue DESC
-      LIMIT 10
-    `;
+    let topClients;
+    if (startDate && endDate) {
+      topClients = await sql`
+        SELECT 
+          c.id,
+          c.full_name,
+          COUNT(i.id) as invoice_count,
+          COALESCE(SUM(i.total_amount), 0) as total_revenue
+        FROM clients c
+        JOIN invoices i ON c.id = i.client_id
+        WHERE i.professional_id = ${professionalId}
+        AND i.issue_date BETWEEN ${startDate} AND ${endDate}
+        GROUP BY c.id, c.full_name
+        ORDER BY total_revenue DESC
+        LIMIT 10
+      `;
+    } else if (startDate) {
+      topClients = await sql`
+        SELECT 
+          c.id,
+          c.full_name,
+          COUNT(i.id) as invoice_count,
+          COALESCE(SUM(i.total_amount), 0) as total_revenue
+        FROM clients c
+        JOIN invoices i ON c.id = i.client_id
+        WHERE i.professional_id = ${professionalId}
+        AND i.issue_date >= ${startDate}
+        GROUP BY c.id, c.full_name
+        ORDER BY total_revenue DESC
+        LIMIT 10
+      `;
+    } else if (endDate) {
+      topClients = await sql`
+        SELECT 
+          c.id,
+          c.full_name,
+          COUNT(i.id) as invoice_count,
+          COALESCE(SUM(i.total_amount), 0) as total_revenue
+        FROM clients c
+        JOIN invoices i ON c.id = i.client_id
+        WHERE i.professional_id = ${professionalId}
+        AND i.issue_date <= ${endDate}
+        GROUP BY c.id, c.full_name
+        ORDER BY total_revenue DESC
+        LIMIT 10
+      `;
+    } else {
+      topClients = await sql`
+        SELECT 
+          c.id,
+          c.full_name,
+          COUNT(i.id) as invoice_count,
+          COALESCE(SUM(i.total_amount), 0) as total_revenue
+        FROM clients c
+        JOIN invoices i ON c.id = i.client_id
+        WHERE i.professional_id = ${professionalId}
+        GROUP BY c.id, c.full_name
+        ORDER BY total_revenue DESC
+        LIMIT 10
+      `;
+    }
 
     // Monthly revenue trend (last 12 months)
     const monthlyTrend = await sql`
@@ -74,36 +183,141 @@ export async function GET(request) {
     `;
 
     // Average invoice value
-    const [avgData] = await sql`
-      SELECT 
-        COALESCE(AVG(total_amount), 0) as average_invoice_value,
-        COUNT(*) as total_invoices
-      FROM invoices
-      WHERE professional_id = ${professionalId} ${dateFilter}
-    `;
+    let avgData;
+    if (startDate && endDate) {
+      [avgData] = await sql`
+        SELECT 
+          COALESCE(AVG(total_amount), 0) as average_invoice_value,
+          COUNT(*) as total_invoices
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND issue_date BETWEEN ${startDate} AND ${endDate}
+      `;
+    } else if (startDate) {
+      [avgData] = await sql`
+        SELECT 
+          COALESCE(AVG(total_amount), 0) as average_invoice_value,
+          COUNT(*) as total_invoices
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND issue_date >= ${startDate}
+      `;
+    } else if (endDate) {
+      [avgData] = await sql`
+        SELECT 
+          COALESCE(AVG(total_amount), 0) as average_invoice_value,
+          COUNT(*) as total_invoices
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND issue_date <= ${endDate}
+      `;
+    } else {
+      [avgData] = await sql`
+        SELECT 
+          COALESCE(AVG(total_amount), 0) as average_invoice_value,
+          COUNT(*) as total_invoices
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+      `;
+    }
 
     // Payment method breakdown
-    const paymentMethods = await sql`
-      SELECT 
-        p.payment_method,
-        COUNT(*) as count,
-        COALESCE(SUM(p.amount), 0) as total_amount
-      FROM payments p
-      JOIN invoices i ON p.invoice_id = i.id
-      WHERE i.professional_id = ${professionalId} ${dateFilter}
-      GROUP BY p.payment_method
-      ORDER BY total_amount DESC
-    `;
+    let paymentMethods;
+    if (startDate && endDate) {
+      paymentMethods = await sql`
+        SELECT 
+          p.payment_method,
+          COUNT(*) as count,
+          COALESCE(SUM(p.amount), 0) as total_amount
+        FROM payments p
+        JOIN invoices i ON p.invoice_id = i.id
+        WHERE i.professional_id = ${professionalId}
+        AND i.issue_date BETWEEN ${startDate} AND ${endDate}
+        GROUP BY p.payment_method
+        ORDER BY total_amount DESC
+      `;
+    } else if (startDate) {
+      paymentMethods = await sql`
+        SELECT 
+          p.payment_method,
+          COUNT(*) as count,
+          COALESCE(SUM(p.amount), 0) as total_amount
+        FROM payments p
+        JOIN invoices i ON p.invoice_id = i.id
+        WHERE i.professional_id = ${professionalId}
+        AND i.issue_date >= ${startDate}
+        GROUP BY p.payment_method
+        ORDER BY total_amount DESC
+      `;
+    } else if (endDate) {
+      paymentMethods = await sql`
+        SELECT 
+          p.payment_method,
+          COUNT(*) as count,
+          COALESCE(SUM(p.amount), 0) as total_amount
+        FROM payments p
+        JOIN invoices i ON p.invoice_id = i.id
+        WHERE i.professional_id = ${professionalId}
+        AND i.issue_date <= ${endDate}
+        GROUP BY p.payment_method
+        ORDER BY total_amount DESC
+      `;
+    } else {
+      paymentMethods = await sql`
+        SELECT 
+          p.payment_method,
+          COUNT(*) as count,
+          COALESCE(SUM(p.amount), 0) as total_amount
+        FROM payments p
+        JOIN invoices i ON p.invoice_id = i.id
+        WHERE i.professional_id = ${professionalId}
+        GROUP BY p.payment_method
+        ORDER BY total_amount DESC
+      `;
+    }
 
     // Time to payment (average days)
-    const [timeData] = await sql`
-      SELECT 
-        COALESCE(AVG(EXTRACT(DAY FROM (paid_at - issue_date))), 0) as avg_days_to_payment
-      FROM invoices
-      WHERE professional_id = ${professionalId}
-      AND status = 'paid'
-      AND paid_at IS NOT NULL ${dateFilter}
-    `;
+    let timeData;
+    if (startDate && endDate) {
+      [timeData] = await sql`
+        SELECT 
+          COALESCE(AVG(EXTRACT(DAY FROM (paid_at - issue_date))), 0) as avg_days_to_payment
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND status = 'paid'
+        AND paid_at IS NOT NULL
+        AND issue_date BETWEEN ${startDate} AND ${endDate}
+      `;
+    } else if (startDate) {
+      [timeData] = await sql`
+        SELECT 
+          COALESCE(AVG(EXTRACT(DAY FROM (paid_at - issue_date))), 0) as avg_days_to_payment
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND status = 'paid'
+        AND paid_at IS NOT NULL
+        AND issue_date >= ${startDate}
+      `;
+    } else if (endDate) {
+      [timeData] = await sql`
+        SELECT 
+          COALESCE(AVG(EXTRACT(DAY FROM (paid_at - issue_date))), 0) as avg_days_to_payment
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND status = 'paid'
+        AND paid_at IS NOT NULL
+        AND issue_date <= ${endDate}
+      `;
+    } else {
+      [timeData] = await sql`
+        SELECT 
+          COALESCE(AVG(EXTRACT(DAY FROM (paid_at - issue_date))), 0) as avg_days_to_payment
+        FROM invoices
+        WHERE professional_id = ${professionalId}
+        AND status = 'paid'
+        AND paid_at IS NOT NULL
+      `;
+    }
 
     return NextResponse.json({
       summary: {

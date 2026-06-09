@@ -13,6 +13,16 @@ export default function ClientDetailPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Time tracking state
+  const [timeEntries, setTimeEntries] = useState([]);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timerStart, setTimerStart] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [manualHours, setManualHours] = useState('');
+  const [manualMinutes, setManualMinutes] = useState('');
+  const [timeNotes, setTimeNotes] = useState('');
+  const [savingTime, setSavingTime] = useState(false);
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -39,6 +49,15 @@ export default function ClientDetailPage({ params }) {
           const docsData = await docsRes.json();
           setDocuments(docsData);
         }
+
+        // Fetch time entries
+        const timeRes = await fetch(
+          `/api/time-entries?professional_id=${user?.id || 1}&client_id=${resolvedParams.id}`
+        );
+        if (timeRes.ok) {
+          const timeData = await timeRes.json();
+          setTimeEntries(timeData);
+        }
       } catch (error) {
         console.error('Error fetching client:', error);
       } finally {
@@ -48,6 +67,19 @@ export default function ClientDetailPage({ params }) {
 
     fetchClientData();
   }, [params, user]);
+
+  // Timer effect
+  useEffect(() => {
+    let interval;
+    if (isTimerRunning && timerStart) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - timerStart) / 1000);
+        setElapsedSeconds(elapsed);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerRunning, timerStart]);
 
   const handleLogout = async () => {
     await signOut();
@@ -176,6 +208,108 @@ export default function ClientDetailPage({ params }) {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const formatTimerDisplay = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartTimer = () => {
+    setTimerStart(Date.now());
+    setIsTimerRunning(true);
+    setElapsedSeconds(0);
+  };
+
+  const handleStopTimer = async () => {
+    if (!timerStart) return;
+    
+    setIsTimerRunning(false);
+    const hoursWorked = elapsedSeconds / 3600; // Convert seconds to hours
+    
+    // Save the timer entry
+    await saveTimeEntry(hoursWorked, 'Timer entry');
+    
+    // Reset timer
+    setTimerStart(null);
+    setElapsedSeconds(0);
+  };
+
+  const handleSaveManualEntry = async () => {
+    const hours = parseInt(manualHours) || 0;
+    const minutes = parseInt(manualMinutes) || 0;
+    
+    if (hours === 0 && minutes === 0) {
+      alert('Please enter hours or minutes');
+      return;
+    }
+    
+    const totalHours = hours + (minutes / 60);
+    await saveTimeEntry(totalHours, timeNotes || 'Manual time entry');
+    
+    // Reset form
+    setManualHours('');
+    setManualMinutes('');
+    setTimeNotes('');
+  };
+
+  const saveTimeEntry = async (hoursWorked, description) => {
+    setSavingTime(true);
+    try {
+      const resolvedParams = await params;
+      const response = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          professional_id: user?.id || 1,
+          client_id: parseInt(resolvedParams.id),
+          description,
+          work_date: new Date().toISOString().split('T')[0],
+          hours_worked: hoursWorked,
+          hourly_rate: 100, // Default rate, should come from professional settings
+          billable: true
+        })
+      });
+
+      if (response.ok) {
+        const newEntry = await response.json();
+        setTimeEntries([newEntry, ...timeEntries]);
+      } else {
+        throw new Error('Failed to save time entry');
+      }
+    } catch (error) {
+      console.error('Error saving time entry:', error);
+      alert('Error saving time entry. Please try again.');
+    } finally {
+      setSavingTime(false);
+    }
+  };
+
+  const handleDeleteTimeEntry = async (entryId) => {
+    if (!confirm('Delete this time entry?')) return;
+    
+    try {
+      const response = await fetch(`/api/time-entries/${entryId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setTimeEntries(timeEntries.filter(entry => entry.id !== entryId));
+      } else {
+        throw new Error('Failed to delete time entry');
+      }
+    } catch (error) {
+      console.error('Error deleting time entry:', error);
+      alert('Error deleting time entry. Please try again.');
+    }
+  };
+
+  const calculateTotalHours = () => {
+    return timeEntries.reduce((total, entry) => {
+      return total + parseFloat(entry.hours_worked || 0);
+    }, 0);
   };
 
   if (loading) {
@@ -328,6 +462,17 @@ export default function ClientDetailPage({ params }) {
               >
                 <i className="ph-light ph-credit-card mr-2"></i>
                 Payment History
+              </button>
+              <button
+                onClick={() => setActiveTab('time-tracking')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === 'time-tracking'
+                    ? 'text-brand-600 border-brand-600'
+                    : 'text-slate-600 border-transparent hover:text-slate-900'
+                }`}
+              >
+                <i className="ph-light ph-timer mr-2"></i>
+                Time Tracking
               </button>
               <button
                 onClick={() => setActiveTab('documents')}
@@ -717,6 +862,173 @@ export default function ClientDetailPage({ params }) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'time-tracking' && (
+            <div className="space-y-8">
+              {/* Timer Section */}
+              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                <h2 className="font-semibold text-xl text-slate-900 mb-6 flex items-center gap-2">
+                  <i className="ph-light ph-timer text-brand-600"></i>
+                  Live Timer
+                </h2>
+                
+                <div className="flex flex-col items-center justify-center py-8 bg-gradient-to-br from-brand-50 to-indigo-50 rounded-xl">
+                  <div className="text-6xl font-bold text-slate-900 mb-6 font-mono">
+                    {formatTimerDisplay(elapsedSeconds)}
+                  </div>
+                  
+                  {!isTimerRunning ? (
+                    <button
+                      onClick={handleStartTimer}
+                      className="px-8 py-4 bg-brand-600 text-white hover:bg-brand-700 font-semibold text-lg rounded-xl transition-all shadow-md shadow-brand-500/20 flex items-center gap-2"
+                    >
+                      <i className="ph-bold ph-play text-xl"></i>
+                      Start Timer
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleStopTimer}
+                      disabled={savingTime}
+                      className="px-8 py-4 bg-red-600 text-white hover:bg-red-700 font-semibold text-lg rounded-xl transition-all shadow-md shadow-red-500/20 flex items-center gap-2"
+                    >
+                      <i className="ph-bold ph-stop text-xl"></i>
+                      {savingTime ? 'Saving...' : 'Stop & Save'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Manual Entry Section */}
+              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                <h2 className="font-semibold text-xl text-slate-900 mb-6 flex items-center gap-2">
+                  <i className="ph-light ph-pencil text-brand-600"></i>
+                  Manual Time Entry
+                </h2>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Hours</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="24"
+                        value={manualHours}
+                        onChange={(e) => setManualHours(e.target.value)}
+                        placeholder="0"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Minutes</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        value={manualMinutes}
+                        onChange={(e) => setManualMinutes(e.target.value)}
+                        placeholder="0"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Notes (Optional)</label>
+                    <textarea
+                      value={timeNotes}
+                      onChange={(e) => setTimeNotes(e.target.value)}
+                      placeholder="What did you work on?"
+                      rows="3"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={handleSaveManualEntry}
+                    disabled={savingTime}
+                    className="w-full px-6 py-3 bg-brand-600 text-white hover:bg-brand-700 font-semibold rounded-xl transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2"
+                  >
+                    <i className="ph-bold ph-plus-circle text-lg"></i>
+                    {savingTime ? 'Saving...' : 'Save Time Entry'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Total Hours Summary */}
+              <div className="bg-gradient-to-br from-emerald-600 to-green-600 rounded-2xl p-8 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-100 text-sm font-semibold uppercase mb-2">Total Hours Tracked</p>
+                    <p className="text-5xl font-bold">{calculateTotalHours().toFixed(2)}</p>
+                  </div>
+                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                    <i className="ph-light ph-clock text-4xl"></i>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Entries List */}
+              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                <h2 className="font-semibold text-xl text-slate-900 mb-6 flex items-center gap-2">
+                  <i className="ph-light ph-list text-brand-600"></i>
+                  Time Entry History
+                </h2>
+                
+                {timeEntries && timeEntries.length > 0 ? (
+                  <div className="space-y-3">
+                    {timeEntries.map((entry) => (
+                      <div key={entry.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-brand-300 transition-all">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="px-3 py-1 bg-brand-100 text-brand-700 rounded-lg text-sm font-bold">
+                                {parseFloat(entry.hours_worked).toFixed(2)} hrs
+                              </span>
+                              <span className="text-sm text-slate-500">
+                                {formatDate(entry.started_at)}
+                              </span>
+                            </div>
+                            <p className="text-slate-700">{entry.description || 'No description'}</p>
+                            {entry.total_amount && (
+                              <p className="text-sm text-emerald-600 font-semibold mt-2">
+                                BZD {parseFloat(entry.total_amount).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleDeleteTimeEntry(entry.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title="Delete entry"
+                          >
+                            <i className="ph-light ph-trash text-lg"></i>
+                          </button>
+                        </div>
+                        {entry.invoiced && (
+                          <span className="inline-block px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">
+                            Invoiced
+                          </span>
+                        )}
+                        {entry.billable === false && (
+                          <span className="inline-block px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs font-semibold">
+                            Non-billable
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <i className="ph-light ph-timer text-3xl text-slate-400"></i>
+                    </div>
+                    <p className="text-slate-600 mb-2">No time entries yet</p>
+                    <p className="text-sm text-slate-500">Start the timer or add a manual entry to begin tracking time</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

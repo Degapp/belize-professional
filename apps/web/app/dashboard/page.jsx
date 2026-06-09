@@ -327,7 +327,7 @@ export default function DashboardPage() {
                       className="w-full"
                       width="560"
                       height="315"
-                      src="https://www.youtube.com/embed/TRD7MGSZ6cU"
+                      src="https://www.youtube.com/embed/dIf4PZlzYno"
                       title="Client Management Overview - HubSpot CRM Tutorial"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -354,13 +354,13 @@ export default function DashboardPage() {
                     <div className="h-32 bg-slate-900 relative overflow-hidden">
                       <iframe
                         className="w-full h-full"
-                        src="https://www.youtube.com/embed/j7dVxZ5GTCM"
+                        src="https://www.youtube.com/embed/dIf4PZlzYno"
                         title="Client Management Overview"
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       ></iframe>
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">5:30</div>
+                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">43:21</div>
                     </div>
                     <div className="p-4">
                       <h4 className="font-semibold text-slate-900 text-sm mb-1">Client Management Overview</h4>

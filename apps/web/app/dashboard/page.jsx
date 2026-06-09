@@ -627,7 +627,9 @@ export default function DashboardPage() {
                 <i className="ph-light ph-headset text-3xl mb-3 opacity-80"></i>
                 <h3 className="font-semibold mb-2">Need Help?</h3>
                 <p className="text-sm text-indigo-100 mb-4">Our support team is available 24/7 to assist you.</p>
-                <button className="w-full px-4 py-2.5 bg-white text-brand-700 rounded-xl text-sm font-semibold hover:bg-indigo-50 transition-all">
+                <button 
+                  onClick={() => router.push('/support')}
+                  className="w-full px-4 py-2.5 bg-white text-brand-700 rounded-xl text-sm font-semibold hover:bg-indigo-50 transition-all active:scale-[0.98] transition-transform">
                   Contact Support
                 </button>
               </div>

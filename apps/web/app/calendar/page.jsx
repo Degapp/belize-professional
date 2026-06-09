@@ -691,15 +691,54 @@ export default function CalendarPage() {
               <p className="text-sm text-slate-500 mt-1">Update appointment details or send an invoice</p>
               {selectedClient && (
                 <div className="mt-4 pt-4 border-t border-slate-200">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Client: {selectedClient.full_name}</h3>
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">{selectedClient.full_name}</h3>
+                      <p className="text-sm text-slate-600">{selectedClient.email}</p>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                      selectedClient.kyc_status === 'verified' ? 'bg-emerald-100 text-emerald-700' :
+                      selectedClient.kyc_status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                      selectedClient.kyc_status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      KYC: {selectedClient.kyc_status || 'Not Submitted'}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                    <div>
+                      <p className="text-slate-500 text-xs">Phone</p>
+                      <p className="font-semibold text-slate-900">{selectedClient.phone || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500 text-xs">Date of Birth</p>
+                      <p className="font-semibold text-slate-900">
+                        {selectedClient.date_of_birth ? new Date(selectedClient.date_of_birth).toLocaleDateString() : 'Not provided'}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-slate-500 text-xs">Address</p>
+                      <p className="font-semibold text-slate-900">
+                        {selectedClient.address && selectedClient.city ? 
+                          `${selectedClient.address}, ${selectedClient.city}, ${selectedClient.country || ''}` :
+                          'Not provided'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  
                   {previousAppointments.length > 0 && (
-                    <div className="text-xs text-slate-600">
-                      <p className="mb-2 font-semibold">Previous visits: {previousAppointments.length}</p>
-                      {previousAppointments.slice(0, 2).map(apt => (
-                        <div key={apt.id} className="text-xs text-slate-500">
-                          • {apt.title} ({new Date(apt.start_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
-                        </div>
-                      ))}
+                    <div className="text-xs text-slate-600 pt-3 border-t border-slate-100">
+                      <p className="mb-2 font-semibold text-slate-900">Previous visits: {previousAppointments.length}</p>
+                      <div className="space-y-1">
+                        {previousAppointments.slice(0, 3).map(apt => (
+                          <div key={apt.id} className="text-xs text-slate-500 flex items-center gap-2">
+                            <i className="ph-light ph-check-circle"></i>
+                            <span>{apt.title} ({new Date(apt.start_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })})</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -65,11 +65,15 @@ export default function FeaturesPage() {
 
           <nav className="hidden lg:flex items-center gap-8">
             <Link href="/" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Home</Link>
+            <Link href="/dashboard" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Dashboard</Link>
+            <Link href="/dashboard#analytics" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Analytics</Link>
             <Link href="/features" className="relative py-2 text-sm font-semibold text-brand-600 transition-colors after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-600 after:rounded-full">Features</Link>
             <Link href="/professionals" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Professionals</Link>
-            <Link href="/pricing" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Pricing</Link>
+            <Link href="/dashboard#invoicing" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Explore Interactive Invoicing</Link>
+            <Link href="/resources" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Resources</Link>
+            <Link href="/accounting" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Accounting</Link>
+            <Link href="/support" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Support</Link>
             <Link href="/about" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">About Us</Link>
-            <Link href="/contact" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Contact</Link>
           </nav>
 
           <div className="flex items-center gap-4">

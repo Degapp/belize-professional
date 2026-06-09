@@ -56,6 +56,7 @@ export default function RootLayout({ children }) {
         <meta name="description" content="Built with AppGen" />
         <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@300,400,500,600,700&f[]=satoshi@300,400,500,700&display=swap" />
         <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.2/src/light/style.css" />
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
       </head>
       <body className="antialiased">
         <AppGenProvider>

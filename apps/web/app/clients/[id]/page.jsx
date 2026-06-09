@@ -9,7 +9,9 @@ export default function ClientDetailPage({ params }) {
   const { user, signOut } = useAuth();
   const [clientData, setClientData] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState(null);
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
@@ -29,6 +31,13 @@ export default function ClientDetailPage({ params }) {
         if (paymentRes.ok) {
           const paymentData = await paymentRes.json();
           setPaymentHistory(paymentData);
+        }
+
+        // Fetch documents
+        const docsRes = await fetch(`/api/clients/${resolvedParams.id}/documents`);
+        if (docsRes.ok) {
+          const docsData = await docsRes.json();
+          setDocuments(docsData);
         }
       } catch (error) {
         console.error('Error fetching client:', error);
@@ -83,6 +92,90 @@ export default function ClientDetailPage({ params }) {
       case 'closed': return 'bg-slate-100 text-slate-700';
       default: return 'bg-slate-100 text-slate-700';
     }
+  };
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+
+    try {
+      for (const file of files) {
+        // Upload file
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error('File upload failed');
+        }
+
+        const uploadData = await uploadRes.json();
+
+        // Save document record
+        const resolvedParams = await params;
+        const docRes = await fetch(`/api/clients/${resolvedParams.id}/documents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file_name: file.name,
+            file_path: uploadData.url,
+            file_type: file.type,
+            file_size: file.size,
+            uploaded_by: user?.id || null,
+          }),
+        });
+
+        if (docRes.ok) {
+          const newDoc = await docRes.json();
+          setDocuments([newDoc, ...documents]);
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      alert('Error uploading files. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (documentId) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+
+    try {
+      const resolvedParams = await params;
+      const res = await fetch(
+        `/api/clients/${resolvedParams.id}/documents?document_id=${documentId}`,
+        { method: 'DELETE' }
+      );
+
+      if (res.ok) {
+        setDocuments(documents.filter(doc => doc.id !== documentId));
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Error deleting document. Please try again.');
+    }
+  };
+
+  const getFileIcon = (fileType) => {
+    if (fileType.includes('pdf')) return 'ph-file-pdf';
+    if (fileType.includes('word') || fileType.includes('document')) return 'ph-file-doc';
+    if (fileType.includes('image')) return 'ph-file-image';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'ph-file-xls';
+    return 'ph-file';
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return 'N/A';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   if (loading) {
@@ -235,6 +328,17 @@ export default function ClientDetailPage({ params }) {
               >
                 <i className="ph-light ph-credit-card mr-2"></i>
                 Payment History
+              </button>
+              <button
+                onClick={() => setActiveTab('documents')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === 'documents'
+                    ? 'text-brand-600 border-brand-600'
+                    : 'text-slate-600 border-transparent hover:text-slate-900'
+                }`}
+              >
+                <i className="ph-light ph-folder-open mr-2"></i>
+                Documents ({documents?.length || 0})
               </button>
             </div>
           </div>
@@ -611,6 +715,77 @@ export default function ClientDetailPage({ params }) {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'documents' && (
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-xl text-slate-900">Client Documents</h2>
+                <label className="px-5 py-2.5 bg-brand-600 text-white hover:bg-brand-700 font-semibold rounded-lg transition-all shadow-md shadow-brand-500/20 flex items-center gap-2 cursor-pointer">
+                  <i className="ph-bold ph-upload-simple text-lg"></i>
+                  {uploading ? 'Uploading...' : 'Upload Document'}
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {documents && documents.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {documents.map((doc) => (
+                    <div key={doc.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-brand-300 transition-all group">
+                      <div className="flex items-start gap-3">
+                        <div className="p-3 bg-white rounded-lg border border-slate-200">
+                          <i className={`${getFileIcon(doc.file_type)} text-2xl text-brand-600`}></i>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-900 text-sm truncate" title={doc.file_name}>
+                            {doc.file_name}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {formatFileSize(doc.file_size)}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatDate(doc.upload_date)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
+                        <a
+                          href={doc.file_path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 px-3 py-2 bg-brand-50 text-brand-600 hover:bg-brand-100 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1"
+                        >
+                          <i className="ph-light ph-download-simple"></i>
+                          Download
+                        </a>
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-all flex items-center gap-1"
+                        >
+                          <i className="ph-light ph-trash"></i>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i className="ph-light ph-folder-open text-3xl text-slate-400"></i>
+                  </div>
+                  <p className="text-slate-600 mb-2">No documents uploaded yet</p>
+                  <p className="text-sm text-slate-500">Upload PDF, Word, or image files to keep client documents organized</p>
                 </div>
               )}
             </div>

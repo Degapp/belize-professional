@@ -1,274 +1,336 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { Bell, Mail, Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 
-export default function ReminderSettingsPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [testResults, setTestResults] = useState(null);
-  const [manualTestAppointment, setManualTestAppointment] = useState('');
-  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-  const [professionalId] = useState(1); // In production, get from auth context
+export default function RemindersSettingsPage() {
+  const [settings, setSettings] = useState({
+    professional_id: 1, // In production, get from auth context
+    days_before_due: 3,
+    days_after_due: 0,
+    enabled: false,
+    email_subject: 'Payment Reminder - Invoice {invoice_number}',
+    email_message: 'Dear {client_name},\n\nThis is a friendly reminder that your invoice {invoice_number} for {amount} is due on {due_date}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you for your business!'
+  });
+
+  const [logs, setLogs] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [testingReminders, setTestingReminders] = useState(false);
 
   useEffect(() => {
-    fetchUpcomingAppointments();
+    loadSettings();
+    loadLogs();
   }, []);
 
-  async function fetchUpcomingAppointments() {
+  const loadSettings = async () => {
     try {
-      const response = await fetch('/api/admin/appointments');
-      if (response.ok) {
-        const data = await response.json();
-        const upcoming = data.filter(apt => {
-          const startDate = new Date(apt.start_at);
-          return startDate > new Date() && apt.status === 'scheduled';
-        });
-        setUpcomingAppointments(upcoming.slice(0, 10));
-      }
+      const res = await fetch(`/api/reminders/settings?professional_id=1`);
+      const data = await res.json();
+      setSettings(data);
     } catch (error) {
-      console.error('Error fetching appointments:', error);
-    }
-  }
-
-  async function testAutomatedReminders() {
-    setLoading(true);
-    setTestResults(null);
-    
-    try {
-      const response = await fetch('/api/appointments/auto-reminders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ professional_id: professionalId })
-      });
-
-      const data = await response.json();
-      setTestResults(data);
-    } catch (error) {
-      setTestResults({ error: error.message });
+      console.error('Error loading settings:', error);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function sendManualReminder() {
-    if (!manualTestAppointment) {
-      alert('Please select an appointment');
-      return;
+  const loadLogs = async () => {
+    try {
+      const res = await fetch(`/api/reminders/logs?professional_id=1&limit=20`);
+      const data = await res.json();
+      setLogs(data.logs || []);
+      setStats(data.stats || null);
+    } catch (error) {
+      console.error('Error loading logs:', error);
     }
+  };
 
-    setLoading(true);
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveSuccess(false);
     
     try {
-      const response = await fetch('/api/appointments/send-payment-reminder', {
+      const res = await fetch('/api/reminders/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appointment_id: parseInt(manualTestAppointment) })
+        body: JSON.stringify(settings)
       });
 
-      const data = await response.json();
+      if (res.ok) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const testReminders = async () => {
+    setTestingReminders(true);
+    
+    try {
+      const res = await fetch('/api/reminders/check-and-send', {
+        method: 'POST'
+      });
       
-      if (data.success) {
-        alert(`Reminder sent to: ${data.sent_to}`);
-        setManualTestAppointment('');
-      } else {
-        alert(`Error: ${data.error}`);
-      }
+      const data = await res.json();
+      alert(`Reminder test complete!\n\nSent: ${data.sent} reminders\n\nCheck the Activity Log below for details.`);
+      
+      // Reload logs to show new reminders
+      loadLogs();
     } catch (error) {
-      alert(`Failed: ${error.message}`);
+      console.error('Error testing reminders:', error);
+      alert('Failed to test reminders. Please check the console for details.');
     } finally {
-      setLoading(false);
+      setTestingReminders(false);
     }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
-          >
-            <i className="ph-light ph-arrow-left text-xl"></i>
-            <span>Back to Dashboard</span>
-          </button>
-          
-          <h1 className="text-3xl font-clash font-semibold text-slate-900">
-            Automated Payment Reminders
-          </h1>
-          <p className="text-slate-600 mt-2">
-            Manage automated email reminders for upcoming appointments
-          </p>
-        </div>
-
-        {/* How It Works */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">How It Works</h2>
-          
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                <span className="text-indigo-600 font-semibold">1</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">Automatic Scheduling</h3>
-                <p className="text-sm text-slate-600">
-                  When you create or confirm an appointment that's 3+ days away, a payment reminder is automatically scheduled for 3 days before the appointment.
-                </p>
-              </div>
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+              <Bell className="w-6 h-6 text-white" />
             </div>
-
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                <span className="text-indigo-600 font-semibold">2</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">Daily Automated Sending</h3>
-                <p className="text-sm text-slate-600">
-                  A cron job runs daily at 9 AM to check all scheduled reminders and sends emails to clients with appointment details and payment links.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                <span className="text-indigo-600 font-semibold">3</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">Payment Information</h3>
-                <p className="text-sm text-slate-600">
-                  Each reminder includes the appointment date/time, service details, estimated cost based on hourly rate, and a payment link.
-                </p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Payment Reminders</h1>
+              <p className="text-gray-600">Automate invoice payment reminder emails</p>
             </div>
           </div>
         </div>
 
-        {/* Test Automated Reminders */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">
-            Test Automated Reminder System
-          </h2>
-          
-          <p className="text-sm text-slate-600 mb-4">
-            Check which appointments scheduled 3 days from now would receive automated reminders:
-          </p>
-
-          <button
-            onClick={testAutomatedReminders}
-            disabled={loading}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Checking...' : 'Run Test Check (3 Days Ahead)'}
-          </button>
-
-          {testResults && (
-            <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <h3 className="font-semibold text-slate-900 mb-2">Test Results:</h3>
-              
-              <div className="space-y-2 text-sm">
-                <p><strong>Date Checked:</strong> {testResults.checked_date}</p>
-                <p><strong>Appointments Found:</strong> {testResults.appointments_found}</p>
-                <p><strong>Reminders Sent:</strong> {testResults.reminders_sent}</p>
-              </div>
-
-              {testResults.reminders && testResults.reminders.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-semibold text-slate-900 mb-2">Reminders:</h4>
-                  <div className="space-y-3">
-                    {testResults.reminders.map((r, idx) => (
-                      <div key={idx} className="p-3 bg-white rounded-lg border border-slate-200">
-                        <p className="text-sm"><strong>Client:</strong> {r.client_name}</p>
-                        <p className="text-sm"><strong>Email:</strong> {r.client_email}</p>
-                        <p className="text-sm"><strong>Appointment:</strong> {r.appointment_date} at {r.appointment_time}</p>
-                        <p className="text-sm"><strong>Estimated Cost:</strong> ${r.estimated_cost?.toFixed(2) || 'TBD'}</p>
-                        <p className="text-sm text-indigo-600 truncate">
-                          <strong>Payment Link:</strong> {r.payment_link}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Sent</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.total_sent}</p>
                 </div>
-              )}
-
-              {testResults.error && (
-                <p className="text-red-600 mt-2">{testResults.error}</p>
-              )}
+                <Mail className="w-8 h-8 text-blue-500" />
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Manual Reminder */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">
-            Send Manual Payment Reminder
-          </h2>
-          
-          <p className="text-sm text-slate-600 mb-4">
-            Manually send a payment reminder for any upcoming appointment:
-          </p>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Successful</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.successful}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-500" />
+              </div>
+            </div>
 
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Select Appointment
-              </label>
-              <select
-                value={manualTestAppointment}
-                onChange={(e) => setManualTestAppointment(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Before Due</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.before_due}</p>
+                </div>
+                <Clock className="w-8 h-8 text-blue-500" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Overdue</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
+                </div>
+                <AlertCircle className="w-8 h-8 text-red-500" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Card */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Reminder Settings</h2>
+
+          {/* Enable/Disable Toggle */}
+          <div className="mb-6 pb-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Enable Automatic Reminders</label>
+                <p className="text-sm text-gray-500 mt-1">Send automated email reminders for unpaid invoices</p>
+              </div>
+              <button
+                onClick={() => setSettings({ ...settings, enabled: !settings.enabled })}
+                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                  settings.enabled ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
               >
-                <option value="">Choose an appointment...</option>
-                {upcomingAppointments.map(apt => (
-                  <option key={apt.id} value={apt.id}>
-                    {apt.title} - {apt.client_name} - {new Date(apt.start_at).toLocaleDateString()} {new Date(apt.start_at).toLocaleTimeString()}
-                  </option>
-                ))}
-              </select>
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                    settings.enabled ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
+          </div>
+
+          {/* Timing Settings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Days Before Due Date
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="30"
+                value={settings.days_before_due}
+                onChange={(e) => setSettings({ ...settings, days_before_due: parseInt(e.target.value) })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-sm text-gray-500 mt-1">Send reminder this many days before the due date</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Days After Due Date
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="30"
+                value={settings.days_after_due}
+                onChange={(e) => setSettings({ ...settings, days_after_due: parseInt(e.target.value) })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-sm text-gray-500 mt-1">Send overdue reminders every this many days</p>
+            </div>
+          </div>
+
+          {/* Email Template */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email Subject
+            </label>
+            <input
+              type="text"
+              value={settings.email_subject}
+              onChange={(e) => setSettings({ ...settings, email_subject: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Payment Reminder - Invoice {invoice_number}"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email Message
+            </label>
+            <textarea
+              value={settings.email_message}
+              onChange={(e) => setSettings({ ...settings, email_message: e.target.value })}
+              rows={6}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Dear {client_name},..."
+            />
+            <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800 font-medium mb-1">Available Variables:</p>
+              <div className="flex flex-wrap gap-2">
+                {['{client_name}', '{invoice_number}', '{due_date}', '{amount}', '{days_until_due}', '{days_overdue}'].map(v => (
+                  <code key={v} className="px-2 py-1 bg-white rounded text-xs text-blue-700 border border-blue-200">{v}</code>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save Settings'}
+            </button>
 
             <button
-              onClick={sendManualReminder}
-              disabled={loading || !manualTestAppointment}
-              className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={testReminders}
+              disabled={testingReminders}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Sending...' : 'Send Reminder'}
+              {testingReminders ? 'Testing...' : 'Test Reminders Now'}
             </button>
+
+            {saveSuccess && (
+              <span className="flex items-center text-green-600 font-medium">
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Saved successfully
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Cron Setup Instructions */}
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl shadow-lg p-6 text-white">
-          <h2 className="text-xl font-semibold mb-4">Production Setup</h2>
-          
-          <div className="space-y-3 text-sm">
-            <p>
-              <strong>vercel.json</strong> has been configured to run the cron job daily at 9 AM:
-            </p>
-            <pre className="bg-white/10 rounded-lg p-3 overflow-x-auto">
-{`{
-  "crons": [{
-    "path": "/api/cron/send-appointment-reminders",
-    "schedule": "0 9 * * *"
-  }]
-}`}
-            </pre>
+        {/* Activity Log */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
 
-            <p className="mt-4">
-              <strong>Email Integration:</strong> To send actual emails, integrate with:
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Resend (recommended)</li>
-              <li>SendGrid</li>
-              <li>AWS SES</li>
-              <li>Postmark</li>
-            </ul>
-
-            <p className="mt-4">
-              The reminder email template is ready and includes appointment details, service info, estimated cost, and payment link.
-            </p>
-          </div>
+          {logs.length === 0 ? (
+            <div className="text-center py-12">
+              <Mail className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No reminders sent yet</p>
+              <p className="text-sm text-gray-500 mt-1">Enable reminders above and they'll appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {logs.map((log) => (
+                <div key={log.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      log.status === 'sent' ? 'bg-green-100' : 'bg-red-100'
+                    }`}>
+                      {log.status === 'sent' ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-600" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{log.invoice_number}</p>
+                      <p className="text-sm text-gray-600">{log.client_name} • {log.recipient_email}</p>
+                      {log.error_message && (
+                        <p className="text-sm text-red-600 mt-1">{log.error_message}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                      log.reminder_type === 'before_due' ? 'bg-blue-100 text-blue-700' :
+                      log.reminder_type === 'on_due' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {log.reminder_type === 'before_due' ? 'Before Due' :
+                       log.reminder_type === 'on_due' ? 'On Due Date' : 'Overdue'}
+                    </span>
+                    <p className="text-sm text-gray-500 mt-1">{new Date(log.sent_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

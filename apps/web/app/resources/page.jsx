@@ -11,40 +11,40 @@ export default function ResourcesPage() {
       id: 1,
       title: 'Client Management Overview',
       description: 'Learn how to add new clients, manage their information, and track interactions in the Belize Professionals platform.',
-      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      thumbnail: 'https://img.youtube.com/vi/j7dVxZ5GTCM/maxresdefault.jpg',
+      videoUrl: 'https://www.youtube.com/embed/j7dVxZ5GTCM',
       duration: '5:30'
     },
     {
       id: 2,
       title: 'Document Upload & Management',
       description: 'Step-by-step guide on uploading client documents, organizing files, and accessing stored documents securely.',
-      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      thumbnail: 'https://img.youtube.com/vi/ZPPikY3Qn7Q/maxresdefault.jpg',
+      videoUrl: 'https://www.youtube.com/embed/ZPPikY3Qn7Q',
       duration: '4:15'
     },
     {
       id: 3,
       title: 'Time Tracking & Billing',
       description: 'Master the time tracking features including the live timer, manual entries, and generating accurate billing reports.',
-      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      thumbnail: 'https://img.youtube.com/vi/Xnk4seEHmgw/maxresdefault.jpg',
+      videoUrl: 'https://www.youtube.com/embed/Xnk4seEHmgw',
       duration: '6:45'
     },
     {
       id: 4,
       title: 'Creating & Sending Invoices',
       description: 'Complete walkthrough of creating professional invoices, customizing templates, and sending them to clients via email.',
-      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      thumbnail: 'https://img.youtube.com/vi/KsAq3H4ErHU/maxresdefault.jpg',
+      videoUrl: 'https://www.youtube.com/embed/KsAq3H4ErHU',
       duration: '7:20'
     },
     {
       id: 5,
       title: 'Appointment Scheduling & Reminders',
       description: 'Learn to schedule appointments, sync with Google Calendar, and set up automated reminders for clients.',
-      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      thumbnail: 'https://img.youtube.com/vi/qKcB4FwLogQ/maxresdefault.jpg',
+      videoUrl: 'https://www.youtube.com/embed/qKcB4FwLogQ',
       duration: '5:50'
     }
   ];

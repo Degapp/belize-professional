@@ -15,7 +15,7 @@ function AuthWrapper({ children }) {
 
   useEffect(() => {
     // Skip auth check for public routes
-    const publicRoutes = ['/', '/login', '/signup', '/features', '/pricing', '/about', '/contact', '/professionals', '/forgot-password', '/reset-password'];
+    const publicRoutes = ['/', '/login', '/signup', '/features', '/pricing', '/about', '/contact', '/professionals', '/forgot-password', '/reset-password', '/resources'];
     if (publicRoutes.includes(pathname) || pathname.startsWith('/reset-password')) {
       return;
     }
@@ -41,7 +41,7 @@ function AuthWrapper({ children }) {
   }
 
   // Show children only if authenticated or on public routes
-  const publicRoutes = ['/', '/login', '/signup', '/features', '/pricing', '/about', '/contact', '/professionals', '/forgot-password', '/reset-password'];
+  const publicRoutes = ['/', '/login', '/signup', '/features', '/pricing', '/about', '/contact', '/professionals', '/forgot-password', '/reset-password', '/resources'];
   if (isAuthenticated || publicRoutes.includes(pathname) || pathname.startsWith('/reset-password')) {
     return children;
   }

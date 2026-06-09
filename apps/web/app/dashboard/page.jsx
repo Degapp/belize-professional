@@ -216,6 +216,9 @@ export default function DashboardPage() {
               <Link href="/invoicing" className="text-slate-700 hover:text-brand-600 transition-colors font-medium">
                 Explore Interactive Invoicing
               </Link>
+              <Link href="/resources" className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+                Resources
+              </Link>
               <a href="#" onClick={() => router.push('/accounting')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Accounting</a>
               <a href="#" onClick={() => router.push('/support')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Support</a>
               <a href="#" onClick={() => router.push('/about')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">About Us</a>

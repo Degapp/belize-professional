@@ -64,25 +64,51 @@ export async function POST(request) {
       description,
       started_at,
       ended_at,
+      work_date,
+      hours_worked,
       hourly_rate,
       billable
     } = data;
 
-    if (!professional_id || !client_id || !started_at || !hourly_rate) {
+    if (!professional_id || !client_id || !hourly_rate) {
       return NextResponse.json({ 
-        error: 'professional_id, client_id, started_at, and hourly_rate are required' 
+        error: 'professional_id, client_id, and hourly_rate are required' 
       }, { status: 400 });
     }
 
-    // Calculate hours worked
-    let hoursWorked = 0;
+    // Calculate hours worked and total amount
+    let hoursWorkedValue = 0;
     let totalAmount = 0;
+    let startedAtValue = started_at;
+    let endedAtValue = ended_at;
 
-    if (ended_at) {
-      const start = new Date(started_at);
-      const end = new Date(ended_at);
-      hoursWorked = (end - start) / (1000 * 60 * 60); // Convert to hours
-      totalAmount = hoursWorked * hourly_rate;
+    // If work_date and hours_worked are provided, use those
+    if (work_date && hours_worked) {
+      hoursWorkedValue = hours_worked;
+      totalAmount = hours_worked * hourly_rate;
+      
+      // Create started_at from work_date (set to 9 AM)
+      const workDateObj = new Date(work_date);
+      workDateObj.setHours(9, 0, 0, 0);
+      startedAtValue = workDateObj.toISOString();
+      
+      // Create ended_at by adding hours_worked
+      const endDateObj = new Date(workDateObj);
+      endDateObj.setHours(endDateObj.getHours() + hours_worked);
+      endedAtValue = endDateObj.toISOString();
+    } 
+    // Otherwise use started_at and ended_at if provided
+    else if (started_at) {
+      if (ended_at) {
+        const start = new Date(started_at);
+        const end = new Date(ended_at);
+        hoursWorkedValue = (end - start) / (1000 * 60 * 60); // Convert to hours
+        totalAmount = hoursWorkedValue * hourly_rate;
+      }
+    } else {
+      return NextResponse.json({ 
+        error: 'Either (started_at) or (work_date and hours_worked) must be provided' 
+      }, { status: 400 });
     }
 
     const [entry] = await sql`
@@ -91,7 +117,7 @@ export async function POST(request) {
         hours_worked, hourly_rate, total_amount, billable
       ) VALUES (
         ${professional_id}, ${client_id}, ${case_id || null}, ${description || ''},
-        ${started_at}, ${ended_at || null}, ${hoursWorked}, ${hourly_rate},
+        ${startedAtValue}, ${endedAtValue || null}, ${hoursWorkedValue}, ${hourly_rate},
         ${totalAmount}, ${billable !== false}
       ) RETURNING *
     `;

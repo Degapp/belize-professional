@@ -353,8 +353,7 @@ export default function CalendarPage() {
                       {dayAppointments.map(apt => (
                       <div
                         key={apt.id}
-                        onClick={() => router.push(`/appointments/${apt.id}`)}
-                        className="p-3 bg-white border border-brand-200 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer"
+                        className="p-3 bg-white border border-brand-200 rounded-lg shadow-sm hover:shadow-md transition-all group"
                       >
                         <div className="flex items-start gap-2 mb-2">
                           <i className={`${getLocationIcon(apt.location_type)} text-brand-600 mt-0.5`}></i>
@@ -363,8 +362,19 @@ export default function CalendarPage() {
                             <div className="text-xs text-slate-600">{apt.client_name}</div>
                           </div>
                         </div>
-                        <div className="text-xs font-semibold text-brand-600">
-                          {formatTime(apt.start_at)} - {formatTime(apt.end_at)}
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-semibold text-brand-600">
+                            {formatTime(apt.start_at)} - {formatTime(apt.end_at)}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/appointments/${apt.id}`);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 bg-brand-600 text-white text-xs rounded hover:bg-brand-700"
+                          >
+                            View
+                          </button>
                         </div>
                       </div>
                       ))}
@@ -399,8 +409,7 @@ export default function CalendarPage() {
                   {appointments.map(apt => (
                     <div
                       key={apt.id}
-                      onClick={() => router.push(`/appointments/${apt.id}`)}
-                      className="p-4 border border-slate-200 rounded-lg hover:border-brand-300 hover:shadow-md transition-all cursor-pointer"
+                      className="p-4 border border-slate-200 rounded-lg hover:border-brand-300 hover:shadow-md transition-all group"
                     >
                       <div className="flex items-start gap-4">
                         <div className="flex-shrink-0 text-center">
@@ -429,17 +438,25 @@ export default function CalendarPage() {
                           {apt.description && (
                             <p className="text-sm text-slate-600 mb-2">{apt.description}</p>
                           )}
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className={`px-2 py-1 rounded-full font-semibold ${
-                              apt.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                              apt.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                              apt.status === 'completed' ? 'bg-slate-100 text-slate-700' :
-                              apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                              'bg-amber-100 text-amber-700'
-                            }`}>
-                              {apt.status}
-                            </span>
-                            <span className="text-slate-500">{apt.location_details}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className={`px-2 py-1 rounded-full font-semibold ${
+                                apt.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                                apt.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
+                                apt.status === 'completed' ? 'bg-slate-100 text-slate-700' :
+                                apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                'bg-amber-100 text-amber-700'
+                              }`}>
+                                {apt.status}
+                              </span>
+                              <span className="text-slate-500">{apt.location_details}</span>
+                            </div>
+                            <button
+                              onClick={() => router.push(`/appointments/${apt.id}`)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity px-4 py-1.5 bg-brand-600 text-white text-sm font-semibold rounded-lg hover:bg-brand-700"
+                            >
+                              View Details
+                            </button>
                           </div>
                         </div>
                       </div>

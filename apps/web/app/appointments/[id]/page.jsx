@@ -11,15 +11,50 @@ export default function AppointmentDetailPage({ params }) {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [reminderForm, setReminderForm] = useState({
     recipient_type: 'client',
     channel: 'email',
     hours_before: 24
   });
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    date: '',
+    start_time: '',
+    end_time: '',
+    location_type: '',
+    location_details: '',
+    status: ''
+  });
+  const [invoiceForm, setInvoiceForm] = useState({
+    description: '',
+    hours_worked: 1,
+    hourly_rate: 150,
+    notes: ''
+  });
 
   useEffect(() => {
     fetchAppointmentDetails();
   }, []);
+
+  useEffect(() => {
+    if (appointment) {
+      const startDate = new Date(appointment.start_at);
+      const endDate = new Date(appointment.end_at);
+      setEditForm({
+        title: appointment.title || '',
+        description: appointment.description || '',
+        date: startDate.toISOString().split('T')[0],
+        start_time: startDate.toTimeString().slice(0, 5),
+        end_time: endDate.toTimeString().slice(0, 5),
+        location_type: appointment.location_type || 'in_person',
+        location_details: appointment.location_details || '',
+        status: appointment.status || 'scheduled'
+      });
+    }
+  }, [appointment]);
 
   async function fetchAppointmentDetails() {
     try {
@@ -96,6 +131,109 @@ export default function AppointmentDetailPage({ params }) {
       }
     } catch (error) {
       console.error('Error sending reminder:', error);
+    }
+  }
+
+  async function handleEditSubmit(e) {
+    e.preventDefault();
+    
+    try {
+      const resolvedParams = await params;
+      const startDateTime = new Date(`${editForm.date}T${editForm.start_time}`);
+      const endDateTime = new Date(`${editForm.date}T${editForm.end_time}`);
+      
+      const res = await fetch(`/api/appointments/${resolvedParams.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editForm.title,
+          description: editForm.description,
+          start_at: startDateTime.toISOString(),
+          end_at: endDateTime.toISOString(),
+          location_type: editForm.location_type,
+          location_details: editForm.location_details,
+          status: editForm.status
+        })
+      });
+      
+      if (res.ok) {
+        setShowEditModal(false);
+        fetchAppointmentDetails();
+      }
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+    }
+  }
+
+  async function handleStatusUpdate(newStatus) {
+    try {
+      const resolvedParams = await params;
+      const res = await fetch(`/api/appointments/${resolvedParams.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (res.ok) {
+        fetchAppointmentDetails();
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  }
+
+  async function handleGenerateInvoice(e) {
+    e.preventDefault();
+    
+    if (!appointment) return;
+    
+    try {
+      // First, create a time entry for this appointment
+      const timeEntryRes = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          professional_id: appointment.professional_id,
+          client_id: appointment.client_id,
+          work_date: appointment.start_at.split('T')[0],
+          hours_worked: invoiceForm.hours_worked,
+          hourly_rate: invoiceForm.hourly_rate,
+          description: invoiceForm.description || appointment.title,
+          invoiced: false
+        })
+      });
+      
+      if (!timeEntryRes.ok) {
+        alert('Failed to create time entry');
+        return;
+      }
+      
+      const timeEntry = await timeEntryRes.json();
+      
+      // Then generate invoice using that time entry
+      const invoiceRes = await fetch('/api/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          professional_id: appointment.professional_id,
+          client_id: appointment.client_id,
+          time_entry_ids: [timeEntry.id],
+          issue_date: new Date().toISOString().split('T')[0],
+          due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          notes: invoiceForm.notes
+        })
+      });
+      
+      if (invoiceRes.ok) {
+        const invoice = await invoiceRes.json();
+        setShowInvoiceModal(false);
+        router.push(`/invoices/${invoice.id}`);
+      } else {
+        alert('Failed to generate invoice');
+      }
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      alert('Error generating invoice');
     }
   }
 
@@ -358,15 +496,31 @@ export default function AppointmentDetailPage({ params }) {
             <div className="bg-gradient-to-br from-brand-50 to-indigo-50 rounded-xl border border-brand-100 p-6">
               <h3 className="font-semibold text-slate-900 mb-4">Quick Actions</h3>
               <div className="space-y-2">
-                <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200">
+                <button 
+                  onClick={() => setShowEditModal(true)}
+                  className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200"
+                >
                   <i className="ph-light ph-pencil"></i>
                   Edit Appointment
                 </button>
-                <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200">
+                <button 
+                  onClick={() => setShowInvoiceModal(true)}
+                  className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-emerald-600 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200"
+                >
+                  <i className="ph-light ph-file-text"></i>
+                  Send Invoice
+                </button>
+                <button 
+                  onClick={() => handleStatusUpdate('completed')}
+                  className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200"
+                >
                   <i className="ph-light ph-check-circle"></i>
                   Mark as Completed
                 </button>
-                <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-red-600 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200">
+                <button 
+                  onClick={() => handleStatusUpdate('cancelled')}
+                  className="w-full px-4 py-3 bg-white hover:bg-slate-50 text-red-600 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-slate-200"
+                >
                   <i className="ph-light ph-x-circle"></i>
                   Cancel Appointment
                 </button>
@@ -405,6 +559,248 @@ export default function AppointmentDetailPage({ params }) {
           </div>
         </div>
       </div>
+
+      {/* Edit Appointment Modal */}
+      {showEditModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+          onClick={() => setShowEditModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-slate-200">
+              <h2 className="text-2xl font-bold text-slate-900">Edit Appointment</h2>
+              <p className="text-sm text-slate-500 mt-1">Update appointment details</p>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Title *</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Date *</label>
+                  <input
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Start Time *</label>
+                  <input
+                    type="time"
+                    value={editForm.start_time}
+                    onChange={(e) => setEditForm({ ...editForm, start_time: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">End Time *</label>
+                  <input
+                    type="time"
+                    value={editForm.end_time}
+                    onChange={(e) => setEditForm({ ...editForm, end_time: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Meeting Method *</label>
+                <select
+                  value={editForm.location_type}
+                  onChange={(e) => setEditForm({ ...editForm, location_type: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  required
+                >
+                  <option value="in_person">In-Person</option>
+                  <option value="zoom">Zoom Video Call</option>
+                  <option value="whatsapp_call">WhatsApp Call</option>
+                  <option value="phone">Phone Call</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  {editForm.location_type === 'in_person' ? 'Location' : 
+                   editForm.location_type === 'zoom' ? 'Zoom Link' : 
+                   'Phone Number'}
+                </label>
+                <input
+                  type="text"
+                  value={editForm.location_details}
+                  onChange={(e) => setEditForm({ ...editForm, location_details: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Status *</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  required
+                >
+                  <option value="scheduled">Scheduled</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-brand-600 text-white hover:bg-brand-700 font-semibold rounded-lg transition-all shadow-md shadow-brand-500/20"
+                >
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-6 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send Invoice Modal */}
+      {showInvoiceModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+          onClick={() => setShowInvoiceModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-lg w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-900">Generate Invoice</h2>
+              <p className="text-sm text-slate-500 mt-1">Create an invoice for this appointment</p>
+            </div>
+            
+            <form onSubmit={handleGenerateInvoice} className="p-6 space-y-4">
+              <div className="bg-brand-50 border border-brand-100 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <i className="ph-light ph-info text-brand-600"></i>
+                  <span className="font-semibold text-brand-900">Invoice Details</span>
+                </div>
+                <div className="text-sm text-brand-700">
+                  <div><strong>Client:</strong> {appointment?.client_name}</div>
+                  <div><strong>Appointment:</strong> {appointment?.title}</div>
+                  <div><strong>Date:</strong> {formatDate(appointment?.start_at)}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Service Description *</label>
+                <input
+                  type="text"
+                  value={invoiceForm.description}
+                  onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  placeholder={appointment?.title || 'Professional consultation'}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Hours Worked *</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0.25"
+                    value={invoiceForm.hours_worked}
+                    onChange={(e) => setInvoiceForm({ ...invoiceForm, hours_worked: parseFloat(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Hourly Rate (BZD) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={invoiceForm.hourly_rate}
+                    onChange={(e) => setInvoiceForm({ ...invoiceForm, hourly_rate: parseFloat(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="bg-slate-50 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-slate-600">Subtotal:</span>
+                  <span className="font-semibold text-slate-900">${(invoiceForm.hours_worked * invoiceForm.hourly_rate).toFixed(2)} BZD</span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-slate-500">
+                  <span>GST will be calculated based on professional settings</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Notes (Optional)</label>
+                <textarea
+                  value={invoiceForm.notes}
+                  onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  placeholder="Additional notes for the invoice..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-brand-600 text-white hover:bg-brand-700 font-semibold rounded-lg transition-all"
+                >
+                  Generate & View Invoice
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInvoiceModal(false)}
+                  className="px-6 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Reminder Modal */}
       {showReminderModal && (

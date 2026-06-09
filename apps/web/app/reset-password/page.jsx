@@ -1,155 +1,162 @@
-'use client';
+"use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 
 function ResetPasswordContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
-  
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const router = useRouter();
+  const [token, setToken] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const urlToken = searchParams.get("token");
+    if (urlToken) {
+      setToken(urlToken);
+    } else {
+      setStatus("error");
+      setMessage("Invalid reset link. No token provided.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (!token) {
-      setError('Invalid reset link');
+    
+    if (password !== confirmPassword) {
+      setStatus("error");
+      setMessage("Passwords do not match");
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+    if (password.length < 6) {
+      setStatus("error");
+      setMessage("Password must be at least 6 characters long");
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
-    setLoading(true);
+    setStatus("loading");
+    setMessage("");
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword }),
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword: password }),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset password');
+      if (response.ok) {
+        setStatus("success");
+        setMessage("Password has been reset successfully! Redirecting to login...");
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      } else {
+        setStatus("error");
+        setMessage(data.error || "Failed to reset password. The link may be invalid or expired.");
       }
-
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
-    } catch (err) {
-      setError(err.message || 'Failed to reset password. Please try again.');
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      setStatus("error");
+      setMessage("An error occurred. Please try again later.");
     }
   };
 
+  if (!token && status !== "error") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-12">
+        <div className="text-slate-600">Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/20 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
-          {/* Logo and Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 mx-auto mb-6">
-              <i className="ph-light ph-squares-four text-3xl font-bold"></i>
+        <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
+          <div className="text-center mb-6">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 mx-auto mb-4">
+              <i className="ph-light ph-lock-simple text-2xl font-bold"></i>
             </div>
-            <h1 className="text-3xl font-clash font-bold text-slate-900 mb-3">Set New Password</h1>
-            <p className="text-slate-500">Choose a strong password for your account</p>
+            <h1 className="text-2xl font-clash font-semibold text-slate-900 mb-2">
+              Reset Password
+            </h1>
+            <p className="text-sm text-slate-500">
+              Enter your new password below
+            </p>
           </div>
 
-          {success ? (
-            <div className="space-y-6">
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700">
-                <div className="flex items-start gap-3">
-                  <i className="ph-light ph-check-circle text-2xl flex-shrink-0 mt-0.5"></i>
+          {status === "success" ? (
+            <div className="space-y-4">
+              <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                <div className="flex items-start gap-2">
+                  <i className="ph-light ph-check-circle text-xl mt-0.5"></i>
                   <div>
-                    <p className="font-semibold mb-1">Password reset successful!</p>
-                    <p className="text-sm">Redirecting to login...</p>
+                    <p className="font-semibold mb-1">Success!</p>
+                    <p>{message}</p>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-                  {error}
-                </div>
-              )}
-
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   New Password
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <i className="ph-light ph-lock text-slate-400 text-lg"></i>
-                  </div>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Must be at least 8 characters</p>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  placeholder="At least 6 characters"
+                  autoComplete="new-password"
+                  disabled={!token || status === "error"}
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Confirm New Password
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <i className="ph-light ph-lock text-slate-400 text-lg"></i>
-                  </div>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  placeholder="Re-enter your password"
+                  autoComplete="new-password"
+                  disabled={!token || status === "error"}
+                />
               </div>
+
+              {message && status === "error" && (
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {message}
+                </div>
+              )}
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full px-6 py-3 bg-brand-600 text-white hover:bg-brand-700 disabled:bg-slate-300 disabled:cursor-not-allowed font-semibold rounded-xl transition-all shadow-lg shadow-brand-500/20 active:scale-[0.98]"
+                disabled={status === "loading" || !token || status === "error"}
+                className="w-full px-6 py-3 bg-brand-600 text-white hover:bg-brand-700 font-semibold rounded-xl transition-all shadow-lg shadow-brand-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Resetting Password...' : 'Reset Password'}
+                {status === "loading" ? "Resetting..." : "Reset Password"}
               </button>
 
-              <div className="text-center pt-4">
-                <Link 
-                  href="/login"
-                  className="text-sm text-slate-500 hover:text-brand-600 transition-colors inline-flex items-center gap-2"
-                >
-                  <i className="ph-light ph-arrow-left"></i>
-                  Back to Login
+              <p className="text-sm text-center text-slate-500">
+                <Link href="/login" className="text-brand-600 hover:text-brand-700 font-semibold">
+                  Back to login
                 </Link>
-              </div>
+              </p>
             </form>
           )}
         </div>
@@ -161,13 +168,8 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 mx-auto mb-4 animate-pulse">
-            <i className="ph-light ph-squares-four text-3xl font-bold"></i>
-          </div>
-          <p className="text-slate-500">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-slate-600">Loading...</div>
       </div>
     }>
       <ResetPasswordContent />

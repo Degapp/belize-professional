@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import sql from '@/app/api/utils/sql';
 import crypto from 'crypto';
+import { sendPasswordResetEmail } from '@/lib/email';
 
 export async function POST(request) {
   try {
@@ -16,7 +17,7 @@ export async function POST(request) {
     // Check if user exists
     const users = await sql`
       SELECT id, email, name 
-      FROM user 
+      FROM "user" 
       WHERE email = ${email.toLowerCase()}
     `;
 
@@ -30,51 +31,30 @@ export async function POST(request) {
 
     const user = users[0];
 
-    // Generate reset token
+    // Generate reset token (32 bytes = 64 hex characters)
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+    const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
     // Store reset token in database
     await sql`
-      UPDATE user 
+      UPDATE "user"
       SET 
         reset_token = ${resetToken},
         reset_token_expiry = ${resetTokenExpiry}
       WHERE id = ${user.id}
     `;
 
-    // Create reset URL - use absolute URL in production
-    const baseUrl = process.env.BETTER_AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    // Create reset URL - use absolute URL
+    const baseUrl = process.env.BETTER_AUTH_URL || 'https://isu1ju6pgod4ktl6f3wf8.web-preview.appgen.com';
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    // TODO: Send email with reset link
-    // For now, log it to console (in production, integrate with email service)
-    console.log(`Password Reset for ${user.email}:`);
-    console.log(`Reset URL: ${resetUrl}`);
-    console.log(`Token: ${resetToken}`);
-
-    // You can integrate with email sending here
-    // Example:
-    // await fetch('/api/email/send', {
-    //   method: 'POST',
-    //   body: JSON.stringify({
-    //     to: user.email,
-    //     subject: 'Reset Your Belize Professional Password',
-    //     html: `
-    //       <h2>Password Reset Request</h2>
-    //       <p>Hi ${user.name},</p>
-    //       <p>Click the link below to reset your password:</p>
-    //       <a href="${resetUrl}">${resetUrl}</a>
-    //       <p>This link will expire in 1 hour.</p>
-    //       <p>If you didn't request this, please ignore this email.</p>
-    //     `
-    //   })
-    // });
+    // Send password reset email
+    await sendPasswordResetEmail(user.email, resetUrl, resetToken);
 
     return NextResponse.json({ 
       success: true,
       message: 'If an account exists with this email, a password reset link has been sent.',
-      // Only include these in development
+      // Only include these in development for testing
       ...(process.env.NODE_ENV === 'development' && {
         resetUrl,
         resetToken

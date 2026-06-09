@@ -31,6 +31,9 @@ export default function CalendarPage() {
     location_type: 'in_person',
     location_details: '',
     notes: '',
+    client_phone: '',
+    client_email: '',
+    client_address: '',
   });
 
   // Invoice form state
@@ -132,6 +135,48 @@ export default function CalendarPage() {
     }
     
     setShowEditModal(true);
+  }
+
+  async function handleClientChange(e) {
+    const clientId = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      client_id: clientId,
+      client_phone: '',
+      client_email: '',
+      client_address: '',
+    }));
+    
+    if (clientId) {
+      // Fetch client details to auto-fill
+      try {
+        const res = await fetch(`/api/clients/${clientId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const client = data.client;
+          
+          setFormData(prev => ({
+            ...prev,
+            client_phone: client.phone || '',
+            client_email: client.email || '',
+            client_address: client.address || '',
+          }));
+          
+          // Auto-fill location details from most recent appointment of same type
+          if (data.appointments && data.appointments.length > 0) {
+            const mostRecent = data.appointments[0];
+            if (mostRecent.location_details) {
+              setFormData(prev => ({
+                ...prev,
+                location_details: prev.location_details || mostRecent.location_details
+              }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching client details:', error);
+      }
+    }
   }
 
   async function handleSubmit(e) {

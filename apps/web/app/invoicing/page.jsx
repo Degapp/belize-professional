@@ -406,11 +406,23 @@ export default function InvoicingPage() {
               </span>
             </div>
             <div className="hidden md:flex space-x-8">
-              <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors">
-                Home
+              <Link href="/dashboard" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Dashboard
+              </Link>
+              <Link href="/analytics" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Analytics
               </Link>
               <Link href="/features" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Features
+              </Link>
+              <Link href="/professionals" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Professionals
+              </Link>
+              <Link href="/invoicing" className="text-blue-600 font-semibold border-b-2 border-blue-600">
+                Explore Interactive Invoicing
+              </Link>
+              <Link href="/resources" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Resources
               </Link>
               <Link href="/accounting" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Accounting
@@ -420,12 +432,6 @@ export default function InvoicingPage() {
               </Link>
               <Link href="/about" className="text-gray-700 hover:text-blue-600 transition-colors">
                 About Us
-              </Link>
-              <Link href="/professionals" className="text-gray-700 hover:text-blue-600 transition-colors">
-                Professionals
-              </Link>
-              <Link href="/invoicing" className="text-blue-600 font-semibold border-b-2 border-blue-600">
-                Explore Interactive Invoicing
               </Link>
             </div>
           </div>

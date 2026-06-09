@@ -46,17 +46,15 @@ export default function SupportPage() {
       </a>
 
       <nav className="hidden lg:flex items-center gap-8">
-        <a href="#" onClick={() => router.push('/')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Home</a>
-        <a href="#" onClick={() => router.push('/features')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Features</a>
-        <Link href="/professionals" className="text-gray-700 hover:text-blue-600 transition-colors">
-          Professionals
-        </Link>
-        <Link href="/invoicing" className="text-gray-700 hover:text-blue-600 transition-colors">
-          Explore Interactive Invoicing
-        </Link>
-        <a href="#" onClick={() => router.push('/accounting')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Accounting</a>
-        <a href="#" onClick={() => router.push('/support')} className="relative py-2 text-sm font-semibold text-brand-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-600 after:rounded-full">Support</a>
-        <a href="#" onClick={() => router.push('/about')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">About Us</a>
+        <a href="#" onClick={() => router.push('/dashboard')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Dashboard</a>
+        <a href="#" onClick={() => router.push('/analytics')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Analytics</a>
+        <a href="#" onClick={() => router.push('/features')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Features</a>
+        <a href="#" onClick={() => router.push('/professionals')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Professionals</a>
+        <a href="#" onClick={() => router.push('/invoicing')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Explore Interactive Invoicing</a>
+        <a href="#" onClick={() => router.push('/resources')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Resources</a>
+        <a href="#" onClick={() => router.push('/accounting')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">Accounting</a>
+        <a href="#" onClick={() => router.push('/support')} className="relative py-2 text-sm font-semibold text-brand-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-600 after:rounded-full cursor-pointer">Support</a>
+        <a href="#" onClick={() => router.push('/about')} className="py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">About Us</a>
       </nav>
 
       <div className="flex items-center gap-4">

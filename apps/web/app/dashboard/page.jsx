@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import VideoPlayer from '@/components/VideoPlayer';
 
 function ClientHistorySection({ professionalId }) {
   const [clients, setClients] = useState([]);
@@ -325,67 +324,79 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-slate-50 rounded-xl overflow-hidden group hover:shadow-md transition-all">
                     <div className="h-32 bg-slate-900 relative overflow-hidden">
-                      <VideoPlayer
-                        src="/videos/getting-started.mp4"
-                        autoPlay={false}
-                        compact={true}
-                      />
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">4:32</div>
+                      <iframe
+                        className="w-full h-full"
+                        src="https://www.youtube.com/embed/j7dVxZ5GTCM"
+                        title="Client Management Overview"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">5:30</div>
                     </div>
                     <div className="p-4">
-                      <h4 className="font-semibold text-slate-900 text-sm mb-1">Getting Started Guide</h4>
-                      <p className="text-xs text-slate-500">Your first 10 minutes with Belize Professional</p>
+                      <h4 className="font-semibold text-slate-900 text-sm mb-1">Client Management Overview</h4>
+                      <p className="text-xs text-slate-500">Add clients, manage info, and track interactions</p>
                     </div>
                   </div>
 
                   <div className="bg-slate-50 rounded-xl overflow-hidden group hover:shadow-md transition-all">
                     <div className="h-32 bg-slate-900 relative overflow-hidden">
-                      <VideoPlayer
-                        src="/videos/appointments.mp4"
-                        autoPlay={false}
-                        compact={true}
-                      />
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">7:15</div>
+                      <iframe
+                        className="w-full h-full"
+                        src="https://www.youtube.com/embed/ZPPikY3Qn7Q"
+                        title="Document Upload & Management"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">4:15</div>
                     </div>
                     <div className="p-4">
-                      <h4 className="font-semibold text-slate-900 text-sm mb-1">Managing Appointments</h4>
-                      <p className="text-xs text-slate-500">Schedule, sync, and automate reminders</p>
+                      <h4 className="font-semibold text-slate-900 text-sm mb-1">Document Upload & Management</h4>
+                      <p className="text-xs text-slate-500">Upload and organize client documents securely</p>
                     </div>
                   </div>
 
                   <div className="bg-slate-50 rounded-xl overflow-hidden group hover:shadow-md transition-all">
                     <div className="h-32 bg-slate-900 relative overflow-hidden">
-                      <VideoPlayer
-                        src="/videos/invoices.mp4"
-                        autoPlay={false}
-                        compact={true}
-                      />
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">5:48</div>
+                      <iframe
+                        className="w-full h-full"
+                        src="https://www.youtube.com/embed/Xnk4seEHmgw"
+                        title="Time Tracking & Billing"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">6:45</div>
                     </div>
                     <div className="p-4">
-                      <h4 className="font-semibold text-slate-900 text-sm mb-1">Creating Invoices</h4>
-                      <p className="text-xs text-slate-500">Professional billing with your branding</p>
+                      <h4 className="font-semibold text-slate-900 text-sm mb-1">Time Tracking & Billing</h4>
+                      <p className="text-xs text-slate-500">Master timer, manual entries, and billing reports</p>
                     </div>
                   </div>
 
                   <div className="bg-slate-50 rounded-xl overflow-hidden group hover:shadow-md transition-all">
                     <div className="h-32 bg-slate-900 relative overflow-hidden">
-                      <VideoPlayer
-                        src="/videos/whatsapp.mp4"
-                        autoPlay={false}
-                        compact={true}
-                      />
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">6:22</div>
+                      <iframe
+                        className="w-full h-full"
+                        src="https://www.youtube.com/embed/KsAq3H4ErHU"
+                        title="Creating & Sending Invoices"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">7:20</div>
                     </div>
                     <div className="p-4">
-                      <h4 className="font-semibold text-slate-900 text-sm mb-1">WhatsApp Integration</h4>
-                      <p className="text-xs text-slate-500">Automated reminders and notifications</p>
+                      <h4 className="font-semibold text-slate-900 text-sm mb-1">Creating & Sending Invoices</h4>
+                      <p className="text-xs text-slate-500">Create professional invoices and send to clients</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-slate-100">
-                  <a href="#" className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-2">
+                  <a href="#" onClick={() => router.push('/resources')} className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-2 cursor-pointer">
                     Browse all tutorials <i className="ph-light ph-arrow-right"></i>
                   </a>
                 </div>

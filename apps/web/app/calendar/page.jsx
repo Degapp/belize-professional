@@ -105,6 +105,27 @@ export default function CalendarPage() {
         // Filter out the current appointment and get the most recent ones
         const filtered = prevData.filter(a => a.id !== appointment.id).slice(0, 5);
         setPreviousAppointments(filtered);
+        
+        // Auto-fill details from the most recent past appointment of the same type
+        if (filtered.length > 0) {
+          const mostRecentSimilar = filtered.find(a => a.title === appointment.title) || filtered[0];
+          
+          // Auto-fill location details if they match the same service
+          if (mostRecentSimilar.location_type === appointment.location_type && !appointment.location_details) {
+            setFormData(prev => ({
+              ...prev,
+              location_details: mostRecentSimilar.location_details || prev.location_details
+            }));
+          }
+          
+          // Auto-fill notes if this is a recurring appointment type
+          if (mostRecentSimilar.title === appointment.title && mostRecentSimilar.notes && !appointment.notes) {
+            setFormData(prev => ({
+              ...prev,
+              notes: mostRecentSimilar.notes
+            }));
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching client data:', error);
@@ -731,11 +752,31 @@ export default function CalendarPage() {
                   {previousAppointments.length > 0 && (
                     <div className="text-xs text-slate-600 pt-3 border-t border-slate-100">
                       <p className="mb-2 font-semibold text-slate-900">Previous visits: {previousAppointments.length}</p>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {previousAppointments.slice(0, 3).map(apt => (
-                          <div key={apt.id} className="text-xs text-slate-500 flex items-center gap-2">
-                            <i className="ph-light ph-check-circle"></i>
-                            <span>{apt.title} ({new Date(apt.start_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })})</span>
+                          <div key={apt.id} className="flex items-start justify-between gap-2 p-2 bg-slate-50 rounded">
+                            <div className="flex items-start gap-2 flex-1">
+                              <i className="ph-light ph-check-circle text-slate-400 mt-0.5"></i>
+                              <div className="flex-1">
+                                <p className="text-xs text-slate-900 font-semibold">{apt.title}</p>
+                                <p className="text-xs text-slate-500">{new Date(apt.start_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })} at {formatTime(apt.start_at)}</p>
+                                {apt.location_details && <p className="text-xs text-slate-500 mt-1"><i className="ph-light ph-map-pin text-xs"></i> {apt.location_details}</p>}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  location_type: apt.location_type,
+                                  location_details: apt.location_details || prev.location_details,
+                                  notes: apt.notes || prev.notes,
+                                }));
+                              }}
+                              className="ml-2 px-2 py-1 text-xs bg-brand-100 text-brand-600 hover:bg-brand-200 rounded whitespace-nowrap font-semibold transition-colors"
+                            >
+                              Use Details
+                            </button>
                           </div>
                         ))}
                       </div>

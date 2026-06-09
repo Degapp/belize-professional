@@ -38,7 +38,9 @@ export async function PUT(request, { params }) {
       end_at, 
       location_type, 
       location_details,
-      status
+      status,
+      notes,
+      attachments
     } = body;
 
     const [appointment] = await sql`
@@ -51,6 +53,8 @@ export async function PUT(request, { params }) {
         location_type = COALESCE(${location_type}, location_type),
         location_details = COALESCE(${location_details}, location_details),
         status = COALESCE(${status}, status),
+        notes = COALESCE(${notes}, notes),
+        attachments = COALESCE(${attachments ? JSON.stringify(attachments) : null}::jsonb, attachments),
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *

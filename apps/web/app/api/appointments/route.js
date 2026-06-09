@@ -4,33 +4,13 @@ import { NextResponse } from "next/server";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const view = searchParams.get('view'); // 'day', 'week', 'month'
-    const date = searchParams.get('date'); // ISO date string
+    const view = searchParams.get('view');
+    const date = searchParams.get('date');
+    const clientId = searchParams.get('client_id');
     
     let appointments;
     
-    if (view && date) {
-      const targetDate = new Date(date);
-      let startDate, endDate;
-      
-      if (view === 'day') {
-        startDate = new Date(targetDate);
-        startDate.setHours(0, 0, 0, 0);
-        endDate = new Date(targetDate);
-        endDate.setHours(23, 59, 59, 999);
-      } else if (view === 'week') {
-        const dayOfWeek = targetDate.getDay();
-        startDate = new Date(targetDate);
-        startDate.setDate(targetDate.getDate() - dayOfWeek);
-        startDate.setHours(0, 0, 0, 0);
-        endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-        endDate.setHours(23, 59, 59, 999);
-      } else if (view === 'month') {
-        startDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-        endDate = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
-      }
-      
+    if (clientId) {
       appointments = await sql`
         SELECT 
           a.*,
@@ -39,24 +19,13 @@ export async function GET(request) {
           c.phone as client_phone
         FROM appointments a
         LEFT JOIN clients c ON a.client_id = c.id
-        WHERE a.start_at >= ${startDate.toISOString()} 
-          AND a.start_at <= ${endDate.toISOString()}
-        ORDER BY a.start_at ASC
-      `;
-    } else {
-      appointments = await sql`
-        SELECT 
-          a.*,
-          c.full_name as client_name,
-          c.email as client_email,
-          c.phone as client_phone
-        FROM appointments a
-        LEFT JOIN clients c ON a.client_id = c.id
+        WHERE a.client_id = ${parseInt(clientId)}
         ORDER BY a.start_at DESC
-        LIMIT 100
+        LIMIT 50
       `;
+    } else if (view && date) {
     }
-    
+
     return NextResponse.json(appointments);
   } catch (error) {
     console.error('Error fetching appointments:', error);

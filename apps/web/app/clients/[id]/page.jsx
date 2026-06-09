@@ -8,6 +8,7 @@ export default function ClientDetailPage({ params }) {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [clientData, setClientData] = useState(null);
+  const [paymentHistory, setPaymentHistory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -20,6 +21,15 @@ export default function ClientDetailPage({ params }) {
         if (!response.ok) throw new Error('Failed to fetch client');
         const data = await response.json();
         setClientData(data);
+
+        // Fetch payment history
+        const paymentRes = await fetch(
+          `/api/clients/payment-history?client_id=${resolvedParams.id}&professional_id=${user?.id || 1}`
+        );
+        if (paymentRes.ok) {
+          const paymentData = await paymentRes.json();
+          setPaymentHistory(paymentData);
+        }
       } catch (error) {
         console.error('Error fetching client:', error);
       } finally {
@@ -28,7 +38,7 @@ export default function ClientDetailPage({ params }) {
     };
 
     fetchClientData();
-  }, [params]);
+  }, [params, user]);
 
   const handleLogout = async () => {
     await signOut();
@@ -214,6 +224,17 @@ export default function ClientDetailPage({ params }) {
               >
                 <i className="ph-light ph-folder mr-2"></i>
                 Cases ({cases?.length || 0})
+              </button>
+              <button
+                onClick={() => setActiveTab('payments')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === 'payments'
+                    ? 'text-brand-600 border-brand-600'
+                    : 'text-slate-600 border-transparent hover:text-slate-900'
+                }`}
+              >
+                <i className="ph-light ph-credit-card mr-2"></i>
+                Payment History
               </button>
             </div>
           </div>
@@ -427,6 +448,170 @@ export default function ClientDetailPage({ params }) {
                 </div>
               ) : (
                 <p className="text-center py-12 text-slate-500">No cases yet</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'payments' && paymentHistory && (
+            <div className="space-y-8">
+              {/* Payment Summary Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+                  <p className="text-xs text-slate-500 font-semibold uppercase mb-2">Total Invoices</p>
+                  <p className="text-2xl font-bold text-slate-900">{paymentHistory.summary.total_invoices}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+                  <p className="text-xs text-slate-500 font-semibold uppercase mb-2">Amount Paid</p>
+                  <p className="text-2xl font-bold text-emerald-600">BZD {parseFloat(paymentHistory.summary.total_paid_amount).toFixed(2)}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+                  <p className="text-xs text-slate-500 font-semibold uppercase mb-2">Outstanding</p>
+                  <p className="text-2xl font-bold text-amber-600">BZD {parseFloat(paymentHistory.summary.total_outstanding_amount).toFixed(2)}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+                  <p className="text-xs text-slate-500 font-semibold uppercase mb-2">Unpaid Invoices</p>
+                  <p className="text-2xl font-bold text-slate-900">{paymentHistory.summary.unpaid_invoices}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+                  <p className="text-xs text-slate-500 font-semibold uppercase mb-2">Overdue</p>
+                  <p className="text-2xl font-bold text-red-600">{paymentHistory.summary.overdue_invoices}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+                  <p className="text-xs text-slate-500 font-semibold uppercase mb-2">Avg Days to Pay</p>
+                  <p className="text-2xl font-bold text-slate-900">{Math.round(paymentHistory.summary.avg_days_to_payment)} days</p>
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              {paymentHistory.payment_methods.length > 0 && (
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                  <h3 className="font-semibold text-xl text-slate-900 mb-6">Payment Methods</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {paymentHistory.payment_methods.map((method) => (
+                      <div key={method.payment_method} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          {method.payment_method === 'credit_card' && <i className="ph-light ph-credit-card text-brand-600 text-xl"></i>}
+                          {method.payment_method === 'bank_transfer' && <i className="ph-light ph-bank text-brand-600 text-xl"></i>}
+                          {method.payment_method === 'cash' && <i className="ph-light ph-money text-brand-600 text-xl"></i>}
+                          {method.payment_method === 'check' && <i className="ph-light ph-receipt text-brand-600 text-xl"></i>}
+                          {!['credit_card', 'bank_transfer', 'cash', 'check'].includes(method.payment_method) && <i className="ph-light ph-credit-card text-brand-600 text-xl"></i>}
+                          <h4 className="font-semibold text-slate-900 capitalize">{method.payment_method.replace('_', ' ')}</h4>
+                        </div>
+                        <p className="text-sm text-slate-600 mb-2">{method.count} payment{method.count !== 1 ? 's' : ''}</p>
+                        <p className="text-lg font-bold text-slate-900">BZD {parseFloat(method.total_amount).toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Invoice & Payment Records */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Invoices */}
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                  <h3 className="font-semibold text-xl text-slate-900 mb-6">Invoices</h3>
+                  {paymentHistory.invoices.length > 0 ? (
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {paymentHistory.invoices.map((invoice) => {
+                        const amountDue = invoice.total_amount - invoice.amount_paid;
+                        return (
+                          <div key={invoice.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h4 className="font-semibold text-slate-900">{invoice.invoice_number}</h4>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  Issued: {formatDate(invoice.issue_date)}
+                                </p>
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(invoice.status)}`}>
+                                {invoice.status}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm mt-2 pt-2 border-t border-slate-200">
+                              <div>
+                                <p className="text-xs text-slate-500">Total</p>
+                                <p className="font-semibold text-slate-900">BZD {parseFloat(invoice.total_amount).toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-slate-500">Paid / Due</p>
+                                <p className="font-semibold">
+                                  <span className="text-emerald-600">BZD {parseFloat(invoice.amount_paid).toFixed(2)}</span> / 
+                                  <span className="text-slate-900 ml-1">BZD {parseFloat(amountDue).toFixed(2)}</span>
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-center py-8 text-slate-500">No invoices</p>
+                  )}
+                </div>
+
+                {/* Payments */}
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                  <h3 className="font-semibold text-xl text-slate-900 mb-6">Payment Transactions</h3>
+                  {paymentHistory.payments.length > 0 ? (
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {paymentHistory.payments.map((payment) => (
+                        <div key={payment.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-semibold text-slate-900">{payment.invoice_number}</h4>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {payment.payment_method && `Via ${payment.payment_method.replace('_', ' ')}`}
+                              </p>
+                            </div>
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              payment.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {payment.status}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm mt-2 pt-2 border-t border-slate-200">
+                            <div>
+                              <p className="text-xs text-slate-500">Amount</p>
+                              <p className="font-semibold text-emerald-600">BZD {parseFloat(payment.amount).toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Date</p>
+                              <p className="font-semibold text-slate-900">{formatDate(payment.paid_at)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center py-8 text-slate-500">No payments recorded</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Monthly Trend */}
+              {paymentHistory.monthly_trend.length > 0 && (
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8">
+                  <h3 className="font-semibold text-xl text-slate-900 mb-6">Payment Trend (Last 12 Months)</h3>
+                  <div className="space-y-2">
+                    {paymentHistory.monthly_trend.map((trend) => (
+                      <div key={trend.month} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div className="flex items-center gap-3 flex-1">
+                          <span className="text-sm font-semibold text-slate-600 min-w-fit">{trend.month}</span>
+                          <div className="h-2 bg-slate-200 rounded-full flex-1">
+                            <div 
+                              className="h-2 bg-emerald-500 rounded-full" 
+                              style={{ width: `${Math.min((trend.total_amount / (paymentHistory.monthly_trend[0]?.total_amount || 1)) * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="font-semibold text-slate-900">BZD {parseFloat(trend.total_amount).toFixed(2)}</p>
+                          <p className="text-xs text-slate-500">{trend.payment_count} payment{trend.payment_count !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}

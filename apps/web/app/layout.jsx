@@ -6,6 +6,7 @@ import { AppGenProvider } from "@/components/appgen-provider";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
 
 function AuthWrapper({ children }) {
   const { loading, isAuthenticated } = useAuth();

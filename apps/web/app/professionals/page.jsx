@@ -8,11 +8,16 @@ export default function ProfessionalsPage() {
   const router = useRouter();
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('all');
 
   useEffect(() => {
     async function fetchProfessionals() {
       try {
-        const res = await fetch('/api/professionals');
+        setLoading(true);
+        const url = activeCategory === 'all' 
+          ? '/api/professionals' 
+          : `/api/professionals?category=${activeCategory}`;
+        const res = await fetch(url);
         const data = await res.json();
         setProfessionals(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -23,9 +28,12 @@ export default function ProfessionalsPage() {
       }
     }
     fetchProfessionals();
-  }, []);
+  }, [activeCategory]);
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  const handleViewFullDirectory = () => {
+    setActiveCategory('all');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -131,22 +139,64 @@ export default function ProfessionalsPage() {
     <div className="max-w-7xl mx-auto px-6 lg:px-8">
       
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
-        <button className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl text-sm whitespace-nowrap transition-all">
+        <button 
+          onClick={() => setActiveCategory('all')}
+          className={`px-6 py-2.5 font-semibold rounded-xl text-sm whitespace-nowrap transition-all ${
+            activeCategory === 'all' 
+              ? 'bg-brand-600 text-white' 
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
           All Categories
         </button>
-        <button className="px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-xl text-sm whitespace-nowrap transition-all">
+        <button 
+          onClick={() => setActiveCategory('attorney')}
+          className={`px-6 py-2.5 font-semibold rounded-xl text-sm whitespace-nowrap transition-all ${
+            activeCategory === 'attorney' 
+              ? 'bg-brand-600 text-white' 
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
           <i className="ph-light ph-scales mr-1.5"></i> Attorneys
         </button>
-        <button className="px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-xl text-sm whitespace-nowrap transition-all">
+        <button 
+          onClick={() => setActiveCategory('doctor')}
+          className={`px-6 py-2.5 font-semibold rounded-xl text-sm whitespace-nowrap transition-all ${
+            activeCategory === 'doctor' 
+              ? 'bg-brand-600 text-white' 
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
           <i className="ph-light ph-stethoscope mr-1.5"></i> Doctors
         </button>
-        <button className="px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-xl text-sm whitespace-nowrap transition-all">
+        <button 
+          onClick={() => setActiveCategory('accountant')}
+          className={`px-6 py-2.5 font-semibold rounded-xl text-sm whitespace-nowrap transition-all ${
+            activeCategory === 'accountant' 
+              ? 'bg-brand-600 text-white' 
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
           <i className="ph-light ph-calculator mr-1.5"></i> Accountants
         </button>
-        <button className="px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-xl text-sm whitespace-nowrap transition-all">
+        <button 
+          onClick={() => setActiveCategory('consultant')}
+          className={`px-6 py-2.5 font-semibold rounded-xl text-sm whitespace-nowrap transition-all ${
+            activeCategory === 'consultant' 
+              ? 'bg-brand-600 text-white' 
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
           <i className="ph-light ph-briefcase mr-1.5"></i> Consultants
         </button>
-        <button className="px-6 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold rounded-xl text-sm whitespace-nowrap transition-all">
+        <button 
+          onClick={() => setActiveCategory('engineer')}
+          className={`px-6 py-2.5 font-semibold rounded-xl text-sm whitespace-nowrap transition-all ${
+            activeCategory === 'engineer' 
+              ? 'bg-brand-600 text-white' 
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
           <i className="ph-light ph-hammer mr-1.5"></i> Engineers
         </button>
       </div>
@@ -158,6 +208,49 @@ export default function ProfessionalsPage() {
   <section className="py-16 lg:py-24">
     <div className="max-w-7xl mx-auto px-6 lg:px-8">
       
+      {/* Category Header */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-900">
+          {activeCategory === 'all' 
+            ? 'All Professionals' 
+            : activeCategory === 'attorney' ? 'Attorneys & Lawyers'
+            : activeCategory === 'doctor' ? 'Medical Doctors'
+            : activeCategory === 'accountant' ? 'CPA Accountants'
+            : activeCategory === 'consultant' ? 'Business Consultants'
+            : activeCategory === 'engineer' ? 'Civil Engineers'
+            : 'Professionals'}
+        </h2>
+        <p className="text-slate-600 mt-1">
+          {loading ? 'Loading...' : `${professionals.length} professional${professionals.length !== 1 ? 's' : ''} found`}
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="inline-block w-12 h-12 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-slate-600">Loading professionals...</p>
+        </div>
+      ) : professionals.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <i className="ph-light ph-users text-4xl text-slate-400"></i>
+          </div>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">No professionals found</h3>
+          <p className="text-slate-600 mb-6">
+            {activeCategory === 'all' 
+              ? 'No professionals available in the directory yet.' 
+              : `No ${activeCategory}s found. Try browsing all categories.`}
+          </p>
+          {activeCategory !== 'all' && (
+            <button 
+              onClick={() => setActiveCategory('all')}
+              className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition-all"
+            >
+              View All Categories
+            </button>
+          )}
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
         {Array.isArray(professionals) ? professionals.map((prof) => {
@@ -241,22 +334,28 @@ export default function ProfessionalsPage() {
           );
         }) : null}
 
-        {/* More Professionals CTA */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-luxury overflow-hidden flex flex-col items-center justify-center p-8 text-center hover:shadow-luxury-hover transition-all group">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 group-hover:bg-brand-50 flex items-center justify-center mb-6 transition-colors">
-            <i className="ph-light ph-users text-3xl text-slate-400 group-hover:text-brand-600"></i>
+        {/* View Full Directory CTA (only shown when filtering by category) */}
+        {activeCategory !== 'all' && (
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-luxury overflow-hidden flex flex-col items-center justify-center p-8 text-center hover:shadow-luxury-hover transition-all group">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 group-hover:bg-brand-50 flex items-center justify-center mb-6 transition-colors">
+              <i className="ph-light ph-users text-3xl text-slate-400 group-hover:text-brand-600"></i>
+            </div>
+            
+            <h3 className="text-xl font-bold text-slate-900 mb-3">View All Professionals</h3>
+            <p className="text-sm text-slate-500 mb-6">Browse professionals across all categories</p>
+            
+            <button 
+              onClick={handleViewFullDirectory} 
+              className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition-all w-full"
+            >
+              View Full Directory
+            </button>
           </div>
-          
-          <h3 className="text-xl font-bold text-slate-900 mb-3">More Professionals</h3>
-          <p className="text-sm text-slate-500 mb-6">Browse {professionals.length}+ verified professionals in our directory</p>
-          
-          <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition-all w-full">
-            View Full Directory
-          </button>
-        </div>
+        )}
 
       </div>
-
+      )}
+      
     </div>
   </section>
 

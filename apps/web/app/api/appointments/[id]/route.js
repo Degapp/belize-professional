@@ -40,7 +40,8 @@ export async function PUT(request, { params }) {
       location_details,
       status,
       notes,
-      attachments
+      attachments,
+      send_reminder = true
     } = body;
 
     const [appointment] = await sql`
@@ -59,6 +60,57 @@ export async function PUT(request, { params }) {
       WHERE id = ${id}
       RETURNING *
     `;
+
+    // Auto-schedule reminder if appointment is confirmed and 3+ days away
+    if (send_reminder && status && (status === 'confirmed' || status === 'scheduled')) {
+      const appointmentDate = new Date(start_at || appointment.start_at);
+      const threeDaysFromNow = new Date();
+      threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+
+      // If appointment is 3+ days away, create/update scheduled reminder
+      if (appointmentDate >= threeDaysFromNow) {
+        const reminderDate = new Date(appointmentDate);
+        reminderDate.setDate(reminderDate.getDate() - 3);
+
+        // Check if reminder already exists
+        const [existingReminder] = await sql`
+          SELECT * FROM reminders
+          WHERE appointment_id = ${id}
+            AND recipient_type = 'client'
+            AND channel = 'email'
+            AND status IN ('scheduled', 'pending')
+        `;
+
+        if (existingReminder) {
+          // Update existing reminder
+          await sql`
+            UPDATE reminders
+            SET scheduled_for = ${reminderDate.toISOString()},
+                updated_at = NOW()
+            WHERE id = ${existingReminder.id}
+          `;
+        } else {
+          // Create new reminder
+          await sql`
+            INSERT INTO reminders (
+              appointment_id,
+              recipient_type,
+              channel,
+              message,
+              scheduled_for,
+              status
+            ) VALUES (
+              ${id},
+              'client',
+              'email',
+              'Payment reminder for upcoming appointment',
+              ${reminderDate.toISOString()},
+              'scheduled'
+            )
+          `;
+        }
+      }
+    }
 
     return NextResponse.json(appointment);
   } catch (error) {

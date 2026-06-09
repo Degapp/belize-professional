@@ -454,6 +454,12 @@ export default function DashboardPage() {
                     <i className="ph-light ph-gear text-lg"></i>
                     Settings
                   </button>
+                  <button 
+                    onClick={() => router.push('/settings/reminders')}
+                    className="w-full px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-3">
+                    <i className="ph-light ph-bell text-lg"></i>
+                    Payment Reminders
+                  </button>
                 </div>
               </div>
 

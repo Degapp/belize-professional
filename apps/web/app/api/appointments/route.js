@@ -44,7 +44,8 @@ export async function POST(request) {
       end_at, 
       location_type, 
       location_details,
-      status = 'scheduled'
+      status = 'scheduled',
+      send_reminder = true
     } = body;
 
     const [appointment] = await sql`
@@ -70,6 +71,37 @@ export async function POST(request) {
         ${status}
       ) RETURNING *
     `;
+
+    // Auto-schedule reminder if appointment is confirmed/scheduled and 3+ days away
+    if (send_reminder && (status === 'confirmed' || status === 'scheduled')) {
+      const appointmentDate = new Date(start_at);
+      const threeDaysFromNow = new Date();
+      threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+
+      // If appointment is 3+ days away, create a scheduled reminder
+      if (appointmentDate >= threeDaysFromNow) {
+        const reminderDate = new Date(appointmentDate);
+        reminderDate.setDate(reminderDate.getDate() - 3);
+
+        await sql`
+          INSERT INTO reminders (
+            appointment_id,
+            recipient_type,
+            channel,
+            message,
+            scheduled_for,
+            status
+          ) VALUES (
+            ${appointment.id},
+            'client',
+            'email',
+            'Payment reminder for upcoming appointment',
+            ${reminderDate.toISOString()},
+            'scheduled'
+          )
+        `;
+      }
+    }
 
     return NextResponse.json(appointment);
   } catch (error) {

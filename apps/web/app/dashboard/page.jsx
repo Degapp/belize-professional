@@ -310,6 +310,34 @@ export default function DashboardPage() {
                 </button>
               </div>
 
+              {/* Client Management Overview Video */}
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="font-clash text-xl font-semibold text-slate-900 flex items-center gap-2">
+                      <i className="ph-light ph-play-circle text-brand-600"></i> Client Management Overview
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">Professional CRM and client management tutorial</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <div className="w-full max-w-2xl bg-slate-900 rounded-xl overflow-hidden">
+                    <iframe
+                      className="w-full"
+                      width="560"
+                      height="315"
+                      src="https://www.youtube.com/embed/TRD7MGSZ6cU"
+                      title="Client Management Overview - HubSpot CRM Tutorial"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-4 text-center">Learn professional client management best practices with this comprehensive HubSpot CRM tutorial</p>
+                </div>
+              </div>
+
               {/* Video Tutorials Section */}
               <div className="bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm">
                 <div className="flex items-center justify-between mb-6">

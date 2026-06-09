@@ -10,10 +10,10 @@ export default function ResourcesPage() {
     {
       id: 1,
       title: 'Client Management Overview',
-      description: 'Learn how to add new clients, manage their information, and track interactions in the Belize Professionals platform.',
-      thumbnail: 'https://img.youtube.com/vi/j7dVxZ5GTCM/maxresdefault.jpg',
-      videoUrl: 'https://www.youtube.com/embed/j7dVxZ5GTCM',
-      duration: '5:30'
+      description: 'Professional CRM tutorial covering client management fundamentals, contact organization, and relationship tracking for modern professionals.',
+      thumbnail: 'https://img.youtube.com/vi/8VUWyMVK2Uc/maxresdefault.jpg',
+      videoUrl: 'https://www.youtube.com/embed/8VUWyMVK2Uc',
+      duration: '43:25'
     },
     {
       id: 2,
@@ -71,11 +71,13 @@ export default function ResourcesPage() {
               <div className="relative aspect-video bg-gray-900">
                 {activeVideo === video.id ? (
                   <iframe
+                    width="560"
+                    height="315"
                     className="w-full h-full"
-                    src={`${video.videoUrl}?autoplay=1`}
+                    src={`${video.videoUrl}?autoplay=1&rel=0`}
                     title={video.title}
                     frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   ></iframe>
                 ) : (

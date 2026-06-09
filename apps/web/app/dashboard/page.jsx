@@ -141,6 +141,47 @@ function ClientHistorySection({ professionalId }) {
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
+  const [stats, setStats] = useState({ appointments_this_week: 0, active_clients: 0, pending_invoices: 0 });
+  const [recentInvoices, setRecentInvoices] = useState([]);
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    async function fetchDashboardData() {
+      try {
+        setLoadingData(true);
+        
+        // Fetch stats
+        const statsRes = await fetch(`/api/dashboard/stats?professional_id=${user.id}`);
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats(statsData);
+        }
+
+        // Fetch recent invoices
+        const invoicesRes = await fetch(`/api/dashboard/recent-invoices?professional_id=${user.id}&limit=3`);
+        if (invoicesRes.ok) {
+          const invoicesData = await invoicesRes.json();
+          setRecentInvoices(invoicesData.invoices || []);
+        }
+
+        // Fetch upcoming appointments
+        const appointmentsRes = await fetch(`/api/dashboard/upcoming-appointments?professional_id=${user.id}&limit=2`);
+        if (appointmentsRes.ok) {
+          const appointmentsData = await appointmentsRes.json();
+          setUpcomingAppointments(appointmentsData.appointments || []);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, [user?.id]);
 
   const handleLogout = async () => {
     await signOut();
@@ -215,38 +256,56 @@ export default function DashboardPage() {
               
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm">
+                <button 
+                  onClick={() => router.push('/calendar')}
+                  className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all cursor-pointer text-left">
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
                       <i className="ph-light ph-calendar-check text-xl"></i>
                     </div>
                     <span className="text-xs text-slate-400 font-semibold uppercase">This Week</span>
                   </div>
-                  <div className="text-2xl font-bold text-slate-900 mb-1">12</div>
+                  {loadingData ? (
+                    <div className="text-2xl font-bold text-slate-400 mb-1">--</div>
+                  ) : (
+                    <div className="text-2xl font-bold text-slate-900 mb-1">{stats.appointments_this_week}</div>
+                  )}
                   <div className="text-sm text-slate-500">Appointments</div>
-                </div>
+                </button>
 
-                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm">
+                <button 
+                  onClick={() => router.push('/clients')}
+                  className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-lg hover:border-teal-200 transition-all cursor-pointer text-left">
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center text-teal-600">
                       <i className="ph-light ph-users text-xl"></i>
                     </div>
                     <span className="text-xs text-slate-400 font-semibold uppercase">Active</span>
                   </div>
-                  <div className="text-2xl font-bold text-slate-900 mb-1">48</div>
+                  {loadingData ? (
+                    <div className="text-2xl font-bold text-slate-400 mb-1">--</div>
+                  ) : (
+                    <div className="text-2xl font-bold text-slate-900 mb-1">{stats.active_clients}</div>
+                  )}
                   <div className="text-sm text-slate-500">Clients</div>
-                </div>
+                </button>
 
-                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm">
+                <button 
+                  onClick={() => router.push('/invoice-builder')}
+                  className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-lg hover:border-amber-200 transition-all cursor-pointer text-left">
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
                       <i className="ph-light ph-receipt text-xl"></i>
                     </div>
                     <span className="text-xs text-slate-400 font-semibold uppercase">Pending</span>
                   </div>
-                  <div className="text-2xl font-bold text-slate-900 mb-1">5</div>
+                  {loadingData ? (
+                    <div className="text-2xl font-bold text-slate-400 mb-1">--</div>
+                  ) : (
+                    <div className="text-2xl font-bold text-slate-900 mb-1">{stats.pending_invoices}</div>
+                  )}
                   <div className="text-sm text-slate-500">Invoices</div>
-                </div>
+                </button>
               </div>
 
               {/* Video Tutorials Section */}
@@ -358,54 +417,50 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {/* Sample Invoice Items */}
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                        <i className="ph-light ph-check-circle text-xl"></i>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-sm">Invoice #1247</div>
-                        <div className="text-xs text-slate-500">Client: Sarah Martinez · Feb 15, 2024</div>
-                      </div>
+                  {loadingData ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <i className="ph-light ph-spinner text-2xl animate-spin"></i>
+                      <p className="mt-2 text-sm">Loading invoices...</p>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-slate-900">$1,437.50</div>
-                      <div className="text-xs text-emerald-600 font-semibold">Paid</div>
+                  ) : recentInvoices.length === 0 ? (
+                    <div className="text-center py-12 bg-slate-50 rounded-xl">
+                      <i className="ph-light ph-receipt text-4xl text-slate-300 mb-3"></i>
+                      <p className="text-sm text-slate-500">No invoices yet. Create your first invoice to get started.</p>
                     </div>
-                  </div>
+                  ) : (
+                    recentInvoices.map((invoice) => {
+                      const statusConfig = {
+                        'paid': { color: 'emerald', icon: 'check-circle', label: 'Paid' },
+                        'sent': { color: 'amber', icon: 'clock', label: 'Pending' },
+                        'overdue': { color: 'red', icon: 'warning', label: 'Overdue' },
+                        'draft': { color: 'slate', icon: 'file-dashed', label: 'Draft' }
+                      };
+                      const status = statusConfig[invoice.status] || statusConfig['draft'];
+                      const issueDate = new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
-                        <i className="ph-light ph-clock text-xl"></i>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-sm">Invoice #1246</div>
-                        <div className="text-xs text-slate-500">Client: Marcus Chen · Feb 12, 2024</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-slate-900">$2,125.00</div>
-                      <div className="text-xs text-amber-600 font-semibold">Pending</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                        <i className="ph-light ph-check-circle text-xl"></i>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-sm">Invoice #1245</div>
-                        <div className="text-xs text-slate-500">Client: Elena Rodriguez · Feb 10, 2024</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-slate-900">$875.00</div>
-                      <div className="text-xs text-emerald-600 font-semibold">Paid</div>
-                    </div>
-                  </div>
+                      return (
+                        <div 
+                          key={invoice.id}
+                          onClick={() => router.push(`/invoices/${invoice.id}`)}
+                          className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-lg bg-${status.color}-50 flex items-center justify-center text-${status.color}-600`}>
+                              <i className={`ph-light ph-${status.icon} text-xl`}></i>
+                            </div>
+                            <div>
+                              <div className="font-semibold text-slate-900 text-sm">{invoice.invoice_number}</div>
+                              <div className="text-xs text-slate-500">Client: {invoice.client_name || 'Unknown'} · {issueDate}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-slate-900">${parseFloat(invoice.total_amount).toFixed(2)}</div>
+                            <div className={`text-xs text-${status.color}-600 font-semibold`}>{status.label}</div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-slate-100">
@@ -467,23 +522,61 @@ export default function DashboardPage() {
               <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm">
                 <h3 className="font-semibold text-slate-900 mb-4">Upcoming This Week</h3>
                 <div className="space-y-3">
-                  <div className="p-3 bg-brand-50 rounded-lg border border-brand-100">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="text-xs text-brand-600 font-bold uppercase">Today, 2:30 PM</div>
-                      <span className="text-xs bg-emerald-500/20 text-emerald-700 px-2 py-0.5 rounded font-semibold">Zoom</span>
+                  {loadingData ? (
+                    <div className="text-center py-4 text-slate-500">
+                      <i className="ph-light ph-spinner text-xl animate-spin"></i>
                     </div>
-                    <div className="text-sm font-semibold text-slate-900">Dr. Julian Rodriguez</div>
-                    <div className="text-xs text-slate-500 mt-1">Medical Consultation (45m)</div>
-                  </div>
+                  ) : upcomingAppointments.length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50 rounded-xl">
+                      <i className="ph-light ph-calendar-x text-3xl text-slate-300 mb-2"></i>
+                      <p className="text-xs text-slate-500">No upcoming appointments</p>
+                    </div>
+                  ) : (
+                    upcomingAppointments.map((appointment, index) => {
+                      const startTime = new Date(appointment.start_at);
+                      const endTime = new Date(appointment.end_at);
+                      const duration = Math.round((endTime - startTime) / 60000); // minutes
+                      const isToday = startTime.toDateString() === new Date().toDateString();
+                      const isTomorrow = startTime.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                      
+                      let dateLabel;
+                      if (isToday) {
+                        dateLabel = `Today, ${startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+                      } else if (isTomorrow) {
+                        dateLabel = `Tomorrow, ${startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+                      } else {
+                        dateLabel = startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                      }
 
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="text-xs text-slate-500 font-bold uppercase">Tomorrow, 10:00 AM</div>
-                      <span className="text-xs bg-teal-500/20 text-teal-700 px-2 py-0.5 rounded font-semibold">WhatsApp</span>
-                    </div>
-                    <div className="text-sm font-semibold text-slate-900">Clara Bennett</div>
-                    <div className="text-xs text-slate-500 mt-1">Legal Advisory (60m)</div>
-                  </div>
+                      const meetingTypeConfig = {
+                        'zoom': { color: 'emerald', label: 'Zoom' },
+                        'whatsapp': { color: 'teal', label: 'WhatsApp' },
+                        'google_meet': { color: 'blue', label: 'Google Meet' },
+                        'in_person': { color: 'purple', label: 'In Person' },
+                        'phone': { color: 'indigo', label: 'Phone' }
+                      };
+                      const meetingType = meetingTypeConfig[appointment.meeting_type] || { color: 'slate', label: 'Meeting' };
+
+                      return (
+                        <div 
+                          key={appointment.id}
+                          onClick={() => router.push('/calendar')}
+                          className={`p-3 rounded-lg border cursor-pointer hover:shadow-md transition-all ${index === 0 && isToday ? 'bg-brand-50 border-brand-100' : 'bg-slate-50 border-slate-100'}`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className={`text-xs font-bold uppercase ${index === 0 && isToday ? 'text-brand-600' : 'text-slate-500'}`}>
+                              {dateLabel}
+                            </div>
+                            <span className={`text-xs bg-${meetingType.color}-500/20 text-${meetingType.color}-700 px-2 py-0.5 rounded font-semibold`}>
+                              {meetingType.label}
+                            </span>
+                          </div>
+                          <div className="text-sm font-semibold text-slate-900">{appointment.client_name || 'No client'}</div>
+                          <div className="text-xs text-slate-500 mt-1">{appointment.title} ({duration}m)</div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 

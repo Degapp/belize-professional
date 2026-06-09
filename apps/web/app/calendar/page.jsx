@@ -792,7 +792,40 @@ export default function CalendarPage() {
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Client *</label>
                   <select
                     value={formData.client_id}
-                    onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                    onChange={async (e) => {
+                      setFormData({ ...formData, client_id: e.target.value });
+                      
+                      // Auto-fill client details from past visits
+                      if (e.target.value) {
+                        try {
+                          const clientRes = await fetch(`/api/clients/${e.target.value}`);
+                          if (clientRes.ok) {
+                            const clientData = await clientRes.json();
+                            setSelectedClient(clientData.client);
+                            
+                            // Get previous appointments
+                            const prevRes = await fetch(`/api/appointments?client_id=${e.target.value}`);
+                            if (prevRes.ok) {
+                              const prevData = await prevRes.json();
+                              const filtered = prevData.filter(a => a.id !== selectedAppointment?.id).slice(0, 5);
+                              setPreviousAppointments(filtered);
+                              
+                              // Auto-fill location from most recent appointment if available
+                              if (filtered.length > 0) {
+                                const mostRecent = filtered[0];
+                                setFormData(prev => ({
+                                  ...prev,
+                                  location_type: mostRecent.location_type || prev.location_type,
+                                  location_details: mostRecent.location_details || prev.location_details,
+                                }));
+                              }
+                            }
+                          }
+                        } catch (error) {
+                          console.error('Error loading client details:', error);
+                        }
+                      }
+                    }}
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
                     required
                   >
@@ -1095,7 +1128,40 @@ export default function CalendarPage() {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Client *</label>
                 <select
                   value={formData.client_id}
-                  onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                  onChange={async (e) => {
+                    setFormData({ ...formData, client_id: e.target.value });
+                    
+                    // Auto-fill client details from past visits
+                    if (e.target.value) {
+                      try {
+                        const clientRes = await fetch(`/api/clients/${e.target.value}`);
+                        if (clientRes.ok) {
+                          const clientData = await clientRes.json();
+                          setSelectedClient(clientData.client);
+                          
+                          // Get previous appointments
+                          const prevRes = await fetch(`/api/appointments?client_id=${e.target.value}`);
+                          if (prevRes.ok) {
+                            const prevData = await prevRes.json();
+                            const filtered = prevData.filter(a => a.id !== selectedAppointment?.id).slice(0, 5);
+                            setPreviousAppointments(filtered);
+                            
+                            // Auto-fill location from most recent appointment if available
+                            if (filtered.length > 0) {
+                              const mostRecent = filtered[0];
+                              setFormData(prev => ({
+                                ...prev,
+                                location_type: mostRecent.location_type || prev.location_type,
+                                location_details: mostRecent.location_details || prev.location_details,
+                              }));
+                            }
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error loading client details:', error);
+                      }
+                    }
+                  }}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
                   required
                 >

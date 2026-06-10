@@ -147,6 +147,17 @@ export default function DashboardPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState('');
+  const [activeInvoiceTab, setActiveInvoiceTab] = useState('recent');
+  const [newInvoice, setNewInvoice] = useState({
+    client_id: '',
+    invoice_number: '',
+    issue_date: new Date().toISOString().split('T')[0],
+    due_date: '',
+    items: [{ description: '', quantity: 1, unit_price: 0 }],
+    notes: ''
+  });
+  const [clients, setClients] = useState([]);
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Load todos from localStorage on mount
   useEffect(() => {
@@ -178,10 +189,17 @@ export default function DashboardPage() {
         }
 
         // Fetch recent invoices
-        const invoicesRes = await fetch(`/api/dashboard/recent-invoices?professional_id=${user.id}&limit=3`);
+        const invoicesRes = await fetch(`/api/invoices?professional_id=${user.id}`);
         if (invoicesRes.ok) {
           const invoicesData = await invoicesRes.json();
-          setRecentInvoices(invoicesData.invoices || []);
+          setRecentInvoices(invoicesData.slice(0, 5) || []);
+        }
+
+        // Fetch clients for invoice creation
+        const clientsRes = await fetch(`/api/clients?professional_id=${user.id}`);
+        if (clientsRes.ok) {
+          const clientsData = await clientsRes.json();
+          setClients(clientsData || []);
         }
 
         // Fetch upcoming appointments
@@ -227,6 +245,111 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     await signOut();
     router.push('/login');
+  };
+
+  const handleAddInvoiceItem = () => {
+    setNewInvoice({
+      ...newInvoice,
+      items: [...newInvoice.items, { description: '', quantity: 1, unit_price: 0 }]
+    });
+  };
+
+  const handleRemoveInvoiceItem = (index) => {
+    const items = newInvoice.items.filter((_, i) => i !== index);
+    setNewInvoice({ ...newInvoice, items });
+  };
+
+  const handleInvoiceItemChange = (index, field, value) => {
+    const items = [...newInvoice.items];
+    items[index][field] = value;
+    setNewInvoice({ ...newInvoice, items });
+  };
+
+  const calculateInvoiceTotal = () => {
+    return newInvoice.items.reduce((sum, item) => {
+      return sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+    }, 0);
+  };
+
+  const handleCreateInvoice = async (e) => {
+    e.preventDefault();
+    
+    if (!newInvoice.client_id || !newInvoice.invoice_number || !newInvoice.due_date) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const hasValidItems = newInvoice.items.some(item => 
+      item.description && item.quantity > 0 && item.unit_price > 0
+    );
+
+    if (!hasValidItems) {
+      alert('Please add at least one valid invoice item');
+      return;
+    }
+
+    try {
+      setCreatingInvoice(true);
+
+      const subtotal = calculateInvoiceTotal();
+      const gstAmount = subtotal * 0.10; // 10% GST
+      const totalAmount = subtotal + gstAmount;
+
+      const invoiceData = {
+        professional_id: user.id,
+        client_id: parseInt(newInvoice.client_id),
+        invoice_number: newInvoice.invoice_number,
+        issue_date: newInvoice.issue_date,
+        due_date: newInvoice.due_date,
+        status: 'draft',
+        subtotal: subtotal.toFixed(2),
+        gst_amount: gstAmount.toFixed(2),
+        total_amount: totalAmount.toFixed(2),
+        currency: 'BZD',
+        notes: newInvoice.notes,
+        items: newInvoice.items.filter(item => item.description && item.quantity > 0)
+      };
+
+      const response = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoiceData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create invoice');
+      }
+
+      const createdInvoice = await response.json();
+
+      // Refresh invoices list
+      const invoicesRes = await fetch(`/api/invoices?professional_id=${user.id}`);
+      if (invoicesRes.ok) {
+        const invoicesData = await invoicesRes.json();
+        setRecentInvoices(invoicesData.slice(0, 5) || []);
+      }
+
+      // Reset form
+      setNewInvoice({
+        client_id: '',
+        invoice_number: '',
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: '',
+        items: [{ description: '', quantity: 1, unit_price: 0 }],
+        notes: ''
+      });
+
+      // Switch to recent invoices tab
+      setActiveInvoiceTab('recent');
+
+      alert('Invoice created successfully!');
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      alert(error.message || 'Failed to create invoice');
+    } finally {
+      setCreatingInvoice(false);
+    }
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -500,72 +623,309 @@ export default function DashboardPage() {
                 <ClientHistorySection professionalId={user?.id} />
               </div>
 
-              {/* Invoices Section */}
+              {/* Invoices Section with Tabs */}
               <div className="bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="font-clash text-xl font-semibold text-slate-900 flex items-center gap-2">
-                      <i className="ph-light ph-receipt text-brand-600"></i> Recent Invoices
+                      <i className="ph-light ph-receipt text-brand-600"></i> Invoice Management
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">Track your billing and payments</p>
+                    <p className="text-sm text-slate-500 mt-1">View recent invoices or create new ones</p>
                   </div>
-                  <button className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-all">
-                    <i className="ph-light ph-plus mr-1"></i> Create Invoice
+                </div>
+
+                {/* Tabs Navigation */}
+                <div className="flex gap-2 mb-6 border-b border-slate-200">
+                  <button
+                    onClick={() => setActiveInvoiceTab('recent')}
+                    className={`px-4 py-2.5 text-sm font-semibold transition-all relative ${
+                      activeInvoiceTab === 'recent'
+                        ? 'text-brand-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-600'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <i className="ph-light ph-list mr-2"></i>
+                    Recent Invoices
+                  </button>
+                  <button
+                    onClick={() => setActiveInvoiceTab('create')}
+                    className={`px-4 py-2.5 text-sm font-semibold transition-all relative ${
+                      activeInvoiceTab === 'create'
+                        ? 'text-brand-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-600'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <i className="ph-light ph-plus-circle mr-2"></i>
+                    Create Invoice
                   </button>
                 </div>
 
-                <div className="space-y-3">
-                  {loadingData ? (
-                    <div className="text-center py-8 text-slate-500">
-                      <i className="ph-light ph-spinner text-2xl animate-spin"></i>
-                      <p className="mt-2 text-sm">Loading invoices...</p>
-                    </div>
-                  ) : recentInvoices.length === 0 ? (
-                    <div className="text-center py-12 bg-slate-50 rounded-xl">
-                      <i className="ph-light ph-receipt text-4xl text-slate-300 mb-3"></i>
-                      <p className="text-sm text-slate-500">No invoices yet. Create your first invoice to get started.</p>
-                    </div>
-                  ) : (
-                    recentInvoices.map((invoice) => {
-                      const statusConfig = {
-                        'paid': { color: 'emerald', icon: 'check-circle', label: 'Paid' },
-                        'sent': { color: 'amber', icon: 'clock', label: 'Pending' },
-                        'overdue': { color: 'red', icon: 'warning', label: 'Overdue' },
-                        'draft': { color: 'slate', icon: 'file-dashed', label: 'Draft' }
-                      };
-                      const status = statusConfig[invoice.status] || statusConfig['draft'];
-                      const issueDate = new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                {/* Recent Invoices Tab Content */}
+                {activeInvoiceTab === 'recent' && (
+                  <div className="space-y-3">
+                    {loadingData ? (
+                      <div className="text-center py-8 text-slate-500">
+                        <i className="ph-light ph-spinner text-2xl animate-spin"></i>
+                        <p className="mt-2 text-sm">Loading invoices...</p>
+                      </div>
+                    ) : recentInvoices.length === 0 ? (
+                      <div className="text-center py-12 bg-slate-50 rounded-xl">
+                        <i className="ph-light ph-receipt text-4xl text-slate-300 mb-3"></i>
+                        <p className="text-sm text-slate-500">No invoices yet. Create your first invoice using the "Create Invoice" tab.</p>
+                      </div>
+                    ) : (
+                      <>
+                        {recentInvoices.map((invoice) => {
+                          const statusConfig = {
+                            'paid': { color: 'emerald', icon: 'check-circle', label: 'Paid' },
+                            'sent': { color: 'amber', icon: 'clock', label: 'Pending' },
+                            'overdue': { color: 'red', icon: 'warning', label: 'Overdue' },
+                            'draft': { color: 'slate', icon: 'file-dashed', label: 'Draft' }
+                          };
+                          const status = statusConfig[invoice.status] || statusConfig['draft'];
+                          const issueDate = invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                          const dueDate = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
-                      return (
-                        <div 
-                          key={invoice.id}
-                          onClick={() => router.push(`/invoices/${invoice.id}`)}
-                          className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-lg bg-${status.color}-50 flex items-center justify-center text-${status.color}-600`}>
-                              <i className={`ph-light ph-${status.icon} text-xl`}></i>
+                          // Find client name
+                          const client = clients.find(c => c.id === invoice.client_id);
+                          const clientName = client?.full_name || 'Unknown Client';
+
+                          return (
+                            <div 
+                              key={invoice.id}
+                              className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-lg bg-${status.color}-50 flex items-center justify-center text-${status.color}-600`}>
+                                  <i className={`ph-light ph-${status.icon} text-xl`}></i>
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-slate-900 text-sm">{invoice.invoice_number}</div>
+                                  <div className="text-xs text-slate-500">Client: {clientName} · Issued: {issueDate} · Due: {dueDate}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-slate-900">BZD ${parseFloat(invoice.total_amount || 0).toFixed(2)}</div>
+                                <div className={`text-xs text-${status.color}-600 font-semibold`}>{status.label}</div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-semibold text-slate-900 text-sm">{invoice.invoice_number}</div>
-                              <div className="text-xs text-slate-500">Client: {invoice.client_name || 'Unknown'} · {issueDate}</div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-slate-900">${parseFloat(invoice.total_amount).toFixed(2)}</div>
-                            <div className={`text-xs text-${status.color}-600 font-semibold`}>{status.label}</div>
-                          </div>
+                          );
+                        })}
+                        <div className="mt-6 pt-6 border-t border-slate-100">
+                          <button 
+                            onClick={() => router.push('/invoicing')}
+                            className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-2"
+                          >
+                            View all invoices <i className="ph-light ph-arrow-right"></i>
+                          </button>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
-                <div className="mt-6 pt-6 border-t border-slate-100">
-                  <a href="#" className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-2">
-                    View all invoices <i className="ph-light ph-arrow-right"></i>
-                  </a>
-                </div>
+                {/* Create Invoice Tab Content */}
+                {activeInvoiceTab === 'create' && (
+                  <form onSubmit={handleCreateInvoice} className="space-y-6">
+                    {/* Client Selection */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">
+                        Client <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={newInvoice.client_id}
+                        onChange={(e) => setNewInvoice({ ...newInvoice, client_id: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select a client</option>
+                        {clients.map((client) => (
+                          <option key={client.id} value={client.id}>
+                            {client.full_name} - {client.email}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Invoice Number and Dates */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">
+                          Invoice # <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={newInvoice.invoice_number}
+                          onChange={(e) => setNewInvoice({ ...newInvoice, invoice_number: e.target.value })}
+                          placeholder="INV-001"
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">
+                          Issue Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={newInvoice.issue_date}
+                          onChange={(e) => setNewInvoice({ ...newInvoice, issue_date: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">
+                          Due Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={newInvoice.due_date}
+                          onChange={(e) => setNewInvoice({ ...newInvoice, due_date: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Invoice Items */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="block text-sm font-semibold text-slate-900">
+                          Invoice Items <span className="text-red-500">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleAddInvoiceItem}
+                          className="px-3 py-1.5 bg-brand-50 text-brand-600 hover:bg-brand-100 text-xs font-semibold rounded-lg transition-all"
+                        >
+                          <i className="ph-light ph-plus mr-1"></i> Add Item
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {newInvoice.items.map((item, index) => (
+                          <div key={index} className="grid grid-cols-12 gap-2 items-start p-3 bg-slate-50 rounded-xl">
+                            <div className="col-span-5">
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => handleInvoiceItemChange(index, 'description', e.target.value)}
+                                placeholder="Description"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                required
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => handleInvoiceItemChange(index, 'quantity', e.target.value)}
+                                placeholder="Qty"
+                                min="1"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                required
+                              />
+                            </div>
+                            <div className="col-span-3">
+                              <input
+                                type="number"
+                                value={item.unit_price}
+                                onChange={(e) => handleInvoiceItemChange(index, 'unit_price', e.target.value)}
+                                placeholder="Price (BZD)"
+                                step="0.01"
+                                min="0"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                required
+                              />
+                            </div>
+                            <div className="col-span-2 flex items-center justify-between">
+                              <span className="text-sm font-semibold text-slate-900">
+                                ${((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)).toFixed(2)}
+                              </span>
+                              {newInvoice.items.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveInvoiceItem(index)}
+                                  className="text-red-500 hover:text-red-700 transition-colors"
+                                >
+                                  <i className="ph-light ph-trash text-lg"></i>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Totals */}
+                    <div className="bg-slate-50 rounded-xl p-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Subtotal:</span>
+                        <span className="font-semibold text-slate-900">BZD ${calculateInvoiceTotal().toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">GST (10%):</span>
+                        <span className="font-semibold text-slate-900">BZD ${(calculateInvoiceTotal() * 0.10).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-base pt-2 border-t border-slate-200">
+                        <span className="font-bold text-slate-900">Total:</span>
+                        <span className="font-bold text-brand-600 text-lg">BZD ${(calculateInvoiceTotal() * 1.10).toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">
+                        Notes (Optional)
+                      </label>
+                      <textarea
+                        value={newInvoice.notes}
+                        onChange={(e) => setNewInvoice({ ...newInvoice, notes: e.target.value })}
+                        placeholder="Add any additional notes or payment instructions..."
+                        rows="3"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        disabled={creatingInvoice}
+                        className="flex-1 px-6 py-3 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all"
+                      >
+                        {creatingInvoice ? (
+                          <>
+                            <i className="ph-light ph-spinner animate-spin mr-2"></i>
+                            Creating Invoice...
+                          </>
+                        ) : (
+                          <>
+                            <i className="ph-light ph-check mr-2"></i>
+                            Create Invoice
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewInvoice({
+                            client_id: '',
+                            invoice_number: '',
+                            issue_date: new Date().toISOString().split('T')[0],
+                            due_date: '',
+                            items: [{ description: '', quantity: 1, unit_price: 0 }],
+                            notes: ''
+                          });
+                          setActiveInvoiceTab('recent');
+                        }}
+                        className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
 
             </div>

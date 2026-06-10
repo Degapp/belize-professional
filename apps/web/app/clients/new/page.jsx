@@ -22,14 +22,63 @@ export default function NewClientPage() {
     address: '',
     city: '',
     country: '',
-    notes: ''
+    notes: '',
+    id_type: '',
+    id_number: '',
+    id_expiry_date: '',
+    nationality: '',
+    occupation: '',
+    source_of_funds: '',
+    is_pep: false
   });
+  const [idDocument, setIdDocument] = useState(null);
+  const [addressVerification, setAddressVerification] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (file, type) => {
+    if (!file) return null;
+    
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) throw new Error('Failed to upload file');
+      
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file. Please try again.');
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
 
     try {
+      // Upload documents if provided
+      let idDocumentUrl = null;
+      let addressVerificationUrl = null;
+      
+      if (idDocument) {
+        idDocumentUrl = await handleFileUpload(idDocument, 'id_document');
+      }
+      
+      if (addressVerification) {
+        addressVerificationUrl = await handleFileUpload(addressVerification, 'address_verification');
+      }
+
       const customFieldsObj = {};
       customFields.forEach((field) => {
         if (field.name && field.value) {
@@ -43,7 +92,9 @@ export default function NewClientPage() {
         body: JSON.stringify({
           ...formData,
           professional_id: user?.id || 1,
-          custom_fields: customFieldsObj
+          custom_fields: customFieldsObj,
+          id_document_url: idDocumentUrl,
+          address_verification_url: addressVerificationUrl
         })
       });
 
@@ -442,6 +493,194 @@ export default function NewClientPage() {
               </div>
             </div>
 
+            {/* KYC/AML Information */}
+            <div className="mb-8 pt-8 border-t border-slate-200">
+              <h2 className="font-semibold text-xl text-slate-900 mb-4 flex items-center gap-2">
+                <i className="ph-light ph-identification-card text-brand-600"></i>
+                KYC / AML Verification
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* ID Type */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    ID Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="id_type"
+                    value={formData.id_type}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select ID Type</option>
+                    <option value="passport">Passport</option>
+                    <option value="drivers_license">Driver's License</option>
+                    <option value="social_security">Social Security Card</option>
+                    <option value="national_id">National ID Card</option>
+                  </select>
+                </div>
+
+                {/* ID Number */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    ID Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="id_number"
+                    value={formData.id_number}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                    placeholder="e.g. A1234567"
+                  />
+                </div>
+
+                {/* ID Expiry Date */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    ID Expiry Date
+                  </label>
+                  <input
+                    type="date"
+                    name="id_expiry_date"
+                    value={formData.id_expiry_date}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                  />
+                </div>
+
+                {/* Nationality */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Nationality <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="nationality"
+                    value={formData.nationality}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                    placeholder="e.g. Belizean"
+                  />
+                </div>
+
+                {/* Occupation */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Occupation
+                  </label>
+                  <input
+                    type="text"
+                    name="occupation"
+                    value={formData.occupation}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                    placeholder="e.g. Business Owner"
+                  />
+                </div>
+
+                {/* Source of Funds */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Source of Funds
+                  </label>
+                  <select
+                    name="source_of_funds"
+                    value={formData.source_of_funds}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select Source</option>
+                    <option value="employment">Employment/Salary</option>
+                    <option value="business">Business Income</option>
+                    <option value="investments">Investments</option>
+                    <option value="inheritance">Inheritance</option>
+                    <option value="savings">Savings</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {/* PEP Status */}
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-3 cursor-pointer p-4 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors">
+                    <input
+                      type="checkbox"
+                      name="is_pep"
+                      checked={formData.is_pep}
+                      onChange={(e) => setFormData({ ...formData, is_pep: e.target.checked })}
+                      className="w-5 h-5 text-brand-600 border-slate-300 rounded focus:ring-2 focus:ring-brand-500"
+                    />
+                    <div>
+                      <div className="font-semibold text-slate-900">Politically Exposed Person (PEP)</div>
+                      <div className="text-sm text-slate-600">Check if client holds or has held a prominent public position</div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* ID Document Upload */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    ID Document (Scan/Photo) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setIdDocument(e.target.files[0])}
+                      required
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  {idDocument && (
+                    <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                      <i className="ph-fill ph-check-circle"></i>
+                      {idDocument.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Address Verification Upload */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Address Verification (Utility Bill) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setAddressVerification(e.target.files[0])}
+                      required
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  {addressVerification && (
+                    <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                      <i className="ph-fill ph-check-circle"></i>
+                      {addressVerification.name}
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-500 mt-2">Upload a recent utility bill (water, electricity, internet) for address verification</p>
+                </div>
+              </div>
+
+              {/* AML Compliance Notice */}
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <i className="ph-light ph-info text-xl text-blue-600 mt-0.5"></i>
+                  <div className="text-sm text-blue-900">
+                    <p className="font-semibold mb-1">AML Compliance Information</p>
+                    <p className="text-blue-700">
+                      All information collected is used for Anti-Money Laundering (AML) and Know Your Customer (KYC) compliance purposes.
+                      Documents must be clear, valid, and show the client's full name and address.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Case Notes */}
             <div className="mb-8 pt-8 border-t border-slate-200">
               <h2 className="font-semibold text-xl text-slate-900 mb-4 flex items-center gap-2">
@@ -512,15 +751,16 @@ export default function NewClientPage() {
             <div className="flex gap-4 pt-6 border-t border-slate-200">
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || uploading}
                 className="flex-1 px-6 py-4 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-300 text-white font-semibold rounded-xl transition-all shadow-md shadow-brand-500/20 disabled:shadow-none"
               >
-                {saving ? 'Saving...' : 'Add Client'}
+                {uploading ? 'Uploading documents...' : saving ? 'Saving...' : 'Add Client'}
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/clients')}
-                className="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
+                disabled={saving || uploading}
+                className="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all disabled:opacity-50"
               >
                 Cancel
               </button>

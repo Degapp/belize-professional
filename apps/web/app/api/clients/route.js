@@ -51,7 +51,16 @@ export async function POST(request) {
       city,
       country,
       notes,
-      custom_fields
+      custom_fields,
+      id_type,
+      id_number,
+      id_expiry_date,
+      id_document_url,
+      address_verification_url,
+      nationality,
+      occupation,
+      source_of_funds,
+      is_pep
     } = data;
 
     const [client] = await sql`
@@ -66,7 +75,16 @@ export async function POST(request) {
         country,
         notes,
         custom_fields,
-        kyc_status
+        kyc_status,
+        id_type,
+        id_number,
+        id_expiry_date,
+        id_document_url,
+        address_verification_url,
+        nationality,
+        occupation,
+        source_of_funds,
+        is_pep
       ) VALUES (
         ${professional_id},
         ${full_name},
@@ -78,7 +96,16 @@ export async function POST(request) {
         ${country || null},
         ${notes || null},
         ${JSON.stringify(custom_fields || {})},
-        'pending'
+        'pending',
+        ${id_type || null},
+        ${id_number || null},
+        ${id_expiry_date || null},
+        ${id_document_url || null},
+        ${address_verification_url || null},
+        ${nationality || null},
+        ${occupation || null},
+        ${source_of_funds || null},
+        ${is_pep || false}
       )
       RETURNING *
     `;

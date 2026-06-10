@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import WhatsAppMessaging from '@/components/WhatsAppMessaging';
 
 function ClientHistorySection({ professionalId }) {
   const [clients, setClients] = useState([]);
@@ -469,6 +470,20 @@ export default function DashboardPage() {
                     Browse all tutorials <i className="ph-light ph-arrow-right"></i>
                   </a>
                 </div>
+              </div>
+
+              {/* WhatsApp Messaging Section */}
+              <div className="bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="font-clash text-xl font-semibold text-slate-900 flex items-center gap-2">
+                      <i className="ph-light ph-chat-circle-dots text-brand-600"></i> WhatsApp Messages
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">Send and receive messages with your clients</p>
+                  </div>
+                </div>
+
+                <WhatsAppMessaging />
               </div>
 
               {/* Client History Section */}

@@ -9,6 +9,8 @@ export default function ProfessionalsPage() {
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredProfessionals, setFilteredProfessionals] = useState([]);
 
   useEffect(() => {
     async function fetchProfessionals() {
@@ -20,15 +22,30 @@ export default function ProfessionalsPage() {
         const res = await fetch(url);
         const data = await res.json();
         setProfessionals(Array.isArray(data) ? data : []);
+        setFilteredProfessionals(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching professionals:', error);
         setProfessionals([]);
+        setFilteredProfessionals([]);
       } finally {
         setLoading(false);
       }
     }
     fetchProfessionals();
   }, [activeCategory]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredProfessionals(professionals);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = professionals.filter(prof => 
+        prof.display_name?.toLowerCase().includes(query) ||
+        prof.firm_name?.toLowerCase().includes(query)
+      );
+      setFilteredProfessionals(filtered);
+    }
+  }, [searchQuery, professionals]);
 
   const handleViewFullDirectory = () => {
     setActiveCategory('all');
@@ -126,7 +143,13 @@ export default function ProfessionalsPage() {
         {/* Search & Filter Bar */}
         <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
           <div className="flex-1 relative">
-            <input type="text" placeholder="Search professionals by name or firm..." className="w-full px-5 py-3.5 border border-slate-200 rounded-xl text-base focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all" />
+            <input 
+              type="text" 
+              placeholder="Search professionals by name or firm..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-5 py-3.5 border border-slate-200 rounded-xl text-base focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all" 
+            />
             <i className="ph-light ph-magnifying-glass absolute right-4 top-3.5 text-slate-400 text-xl"></i>
           </div>
           <button className="px-6 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-brand-500/20 active:scale-[0.98] flex items-center justify-center gap-2">
@@ -225,7 +248,8 @@ export default function ProfessionalsPage() {
             : 'Professionals'}
         </h2>
         <p className="text-slate-600 mt-1">
-          {loading ? 'Loading...' : `${professionals.length} professional${professionals.length !== 1 ? 's' : ''} found`}
+          {loading ? 'Loading...' : `${filteredProfessionals.length} professional${filteredProfessionals.length !== 1 ? 's' : ''} found`}
+          {searchQuery && !loading && <span> matching "{searchQuery}"</span>}
         </p>
       </div>
 
@@ -234,18 +258,27 @@ export default function ProfessionalsPage() {
           <div className="inline-block w-12 h-12 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
           <p className="mt-4 text-slate-600">Loading professionals...</p>
         </div>
-      ) : professionals.length === 0 ? (
+      ) : filteredProfessionals.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
             <i className="ph-light ph-users text-4xl text-slate-400"></i>
           </div>
           <h3 className="text-xl font-bold text-slate-900 mb-2">No professionals found</h3>
           <p className="text-slate-600 mb-6">
-            {activeCategory === 'all' 
-              ? 'No professionals available in the directory yet.' 
-              : `No ${activeCategory}s found. Try browsing all categories.`}
+            {searchQuery 
+              ? `No professionals match "${searchQuery}". Try adjusting your search.`
+              : activeCategory === 'all' 
+                ? 'No professionals available in the directory yet.' 
+                : `No ${activeCategory}s found. Try browsing all categories.`}
           </p>
-          {activeCategory !== 'all' && (
+          {searchQuery ? (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition-all"
+            >
+              Clear Search
+            </button>
+          ) : activeCategory !== 'all' && (
             <button 
               onClick={() => setActiveCategory('all')}
               className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition-all"
@@ -257,7 +290,7 @@ export default function ProfessionalsPage() {
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
-        {Array.isArray(professionals) ? professionals.map((prof) => {
+        {Array.isArray(filteredProfessionals) ? filteredProfessionals.map((prof) => {
           const colors = getCategoryColor(prof.category);
           const icon = getCategoryIcon(prof.category);
           const label = getCategoryLabel(prof.category);

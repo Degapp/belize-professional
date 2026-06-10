@@ -104,22 +104,23 @@ async function updateMessageStatus(status) {
     const messageId = status.id;
     const statusType = status.status;
 
-    let updateField = '';
-    switch (statusType) {
-      case 'delivered':
-        updateField = 'delivered_at';
-        break;
-      case 'read':
-        updateField = 'read_at';
-        break;
-      default:
-        return;
-    }
-
-    if (updateField) {
+    // Update status field
+    if (statusType === 'delivered') {
       await sql`
         UPDATE whatsapp_messages
-        SET status = ${statusType}, ${sql([updateField])} = NOW()
+        SET status = ${statusType}, delivered_at = NOW()
+        WHERE message_id = ${messageId}
+      `;
+    } else if (statusType === 'read') {
+      await sql`
+        UPDATE whatsapp_messages
+        SET status = ${statusType}, read_at = NOW()
+        WHERE message_id = ${messageId}
+      `;
+    } else {
+      await sql`
+        UPDATE whatsapp_messages
+        SET status = ${statusType}
         WHERE message_id = ${messageId}
       `;
     }

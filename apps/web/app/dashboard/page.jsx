@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import WhatsAppMessaging from '@/components/WhatsAppMessaging';
+import WhatsAppMessaging from '@/components/WhatsAppMessaging.jsx';
 
 function ClientHistorySection({ professionalId }) {
   const [clients, setClients] = useState([]);

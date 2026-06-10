@@ -5,13 +5,36 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const professionalId = searchParams.get('professional_id') || 1;
+    const clientPhone = searchParams.get('client_phone');
 
-    const messages = await sql`
-      SELECT * FROM whatsapp_messages 
-      WHERE professional_id = ${professionalId}
-      ORDER BY sent_at DESC
-      LIMIT 100
-    `;
+    let messages;
+    if (clientPhone) {
+      // Get messages for specific conversation
+      messages = await sql`
+        SELECT * FROM whatsapp_messages 
+        WHERE professional_id = ${professionalId}
+          AND client_phone = ${clientPhone}
+        ORDER BY sent_at ASC
+      `;
+
+      // Mark received messages as read
+      await sql`
+        UPDATE whatsapp_messages
+        SET read_at = NOW()
+        WHERE professional_id = ${professionalId}
+          AND client_phone = ${clientPhone}
+          AND direction = 'received'
+          AND read_at IS NULL
+      `;
+    } else {
+      // Get all messages
+      messages = await sql`
+        SELECT * FROM whatsapp_messages 
+        WHERE professional_id = ${professionalId}
+        ORDER BY sent_at DESC
+        LIMIT 100
+      `;
+    }
 
     return NextResponse.json(messages);
   } catch (error) {

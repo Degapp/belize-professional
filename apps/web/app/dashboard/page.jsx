@@ -144,6 +144,23 @@ export default function DashboardPage() {
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [todos, setTodos] = useState([]);
+  const [newTodo, setNewTodo] = useState('');
+
+  // Load todos from localStorage on mount
+  useEffect(() => {
+    const savedTodos = localStorage.getItem('dashboard-todos');
+    if (savedTodos) {
+      setTodos(JSON.parse(savedTodos));
+    }
+  }, []);
+
+  // Save todos to localStorage whenever they change
+  useEffect(() => {
+    if (todos.length > 0 || localStorage.getItem('dashboard-todos')) {
+      localStorage.setItem('dashboard-todos', JSON.stringify(todos));
+    }
+  }, [todos]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -181,6 +198,30 @@ export default function DashboardPage() {
 
     fetchDashboardData();
   }, [user?.id]);
+
+  const handleAddTodo = (e) => {
+    e.preventDefault();
+    if (newTodo.trim()) {
+      const newTask = {
+        id: Date.now(),
+        text: newTodo.trim(),
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+      setTodos([...todos, newTask]);
+      setNewTodo('');
+    }
+  };
+
+  const handleToggleTodo = (id) => {
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  const handleDeleteTodo = (id) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -557,6 +598,85 @@ export default function DashboardPage() {
                     <i className="ph-light ph-bell text-lg"></i>
                     Payment Reminders
                   </button>
+                </div>
+              </div>
+
+              {/* To-Do List */}
+              <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                    <i className="ph-light ph-check-square text-brand-600"></i> To-Do List
+                  </h3>
+                  <span className="text-xs text-slate-500 font-medium">
+                    {todos.filter(t => t.completed).length} / {todos.length}
+                  </span>
+                </div>
+
+                {/* Add Task Form */}
+                <form onSubmit={handleAddTodo} className="mb-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newTodo}
+                      onChange={(e) => setNewTodo(e.target.value)}
+                      placeholder="Add a new task..."
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newTodo.trim()}
+                      className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-all"
+                    >
+                      <i className="ph-light ph-plus text-lg"></i>
+                    </button>
+                  </div>
+                </form>
+
+                {/* Task List */}
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {todos.length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50 rounded-xl">
+                      <i className="ph-light ph-check-circle text-3xl text-slate-300 mb-2"></i>
+                      <p className="text-xs text-slate-500">No tasks yet. Add your first task above!</p>
+                    </div>
+                  ) : (
+                    todos.map((todo) => (
+                      <div
+                        key={todo.id}
+                        className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                          todo.completed 
+                            ? 'bg-slate-50 border-slate-200' 
+                            : 'bg-white border-slate-200 hover:border-brand-300'
+                        }`}
+                      >
+                        <button
+                          onClick={() => handleToggleTodo(todo.id)}
+                          className="flex-shrink-0 mt-0.5"
+                        >
+                          {todo.completed ? (
+                            <i className="ph-fill ph-check-square text-xl text-emerald-600"></i>
+                          ) : (
+                            <i className="ph-light ph-square text-xl text-slate-400 hover:text-brand-600 transition-colors"></i>
+                          )}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm break-words ${
+                            todo.completed 
+                              ? 'text-slate-400 line-through' 
+                              : 'text-slate-900'
+                          }`}>
+                            {todo.text}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteTodo(todo.id)}
+                          className="flex-shrink-0 text-slate-400 hover:text-red-600 transition-colors"
+                        >
+                          <i className="ph-light ph-trash text-lg"></i>
+                        </button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
